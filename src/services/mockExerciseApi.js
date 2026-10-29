@@ -40,6 +40,10 @@ export function getExerciseById(id) {
   return wait(exercise)
 }
 
+export function findLocalExerciseById(id) {
+  return mockExercises.find((item) => item.id === String(id)) ?? null
+}
+
 export function getFilterOptions() {
   return wait({
     bodyParts: unique(mockExercises.map((e) => e.bodyPart)),

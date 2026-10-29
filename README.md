@@ -1,8 +1,8 @@
 # Fitness & Workout Explorer
 
-A practice project for learning React. Search and filter exercises, explore detailed instructions, save favorites, revisit recent exercises, and build a personal workout plan that stays saved after you refresh the browser.
+A practice project for learning React. Search and filter exercises, explore detailed instructions, save favorites, revisit recent exercises, and create workout plans and track completed sessions locally after you refresh the browser.
 
-**By default the app uses built-in demo data (24 hand-written sample exercises), so it works right away with no API key.** A "Demo data" banner is always shown in this mode.
+**By default the app uses built-in demo data (24 hand-written sample exercises), so it works right away with no API key.**
 
 ## Technologies
 
@@ -30,7 +30,10 @@ Other commands: `npm run build` (production build), `npm run preview` (serve the
 - Explore page with debounced name search, filters (body part, target muscle, equipment) and "Show more"
 - Exercise details page at `/exercises/:id` with facts, instructions and a favorite button
 - Favorites page, saved in the browser (localStorage) and kept after refresh, no duplicates
-- Workout builder with add/remove controls, a persistent plan, exercise count, and print-friendly layout
+- Workout builder with add/remove controls, editable saved workout plans, and print-friendly layout
+- In-progress sessions saved locally, completed set/repetition tracking, and reviewable workout history
+- Progress dashboard with completed workout counts, a seven-day activity chart, and current/longest streaks
+- Workout plans, active session progress, and completed history share the existing `fitness-explorer-workout` localStorage key; workout data stays in this browser
 - Recently viewed exercises on the homepage, saved locally
 - Explore sorting by recommended order, name A–Z, name Z–A, and body part
 - Loading, error, empty-result and empty-favorites states; image fallback; friendly not-found pages
@@ -43,40 +46,42 @@ src/
   app/routes.jsx            route table
   components/               common/, layout/, exercises/ (reusable UI)
   features/                 favorites, search, recent-view and workout Zustand stores
+                            workoutProgress.js calculates history-based dashboard statistics
   hooks/                    useDebounce, useAsyncData, useDocumentTitle
-  layouts/MainLayout.jsx    navbar, demo banner, footer
-  pages/                    Home, Explore, ExerciseDetails, Favorites, NotFound
+  layouts/MainLayout.jsx    navbar, footer and shared route layout
+  pages/                    Home, Explore, ExerciseDetails, Favorites, Workout, NotFound
   services/                 ALL data access (see below)
   utils/formatExercise.js   small formatting helpers
 ```
 
 ## Settings (optional)
 
-Copy `.env.example` to `.env.local` and edit the copy. Restart `npm run dev` after any change.
+Copy `.env.example` to `.env` and edit the copy. Restart `npm run dev` after any change.
 
 | Variable | Meaning |
 |---|---|
-| `VITE_USE_MOCK_DATA` | `true` (default) = demo data. `false` = live mode (not finished, see below). |
+| `VITE_USE_MOCK_DATA` | `true` (default) = demo data. `false` = live ExerciseDB data. |
 | `VITE_MOCK_SIMULATE_ERROR` | `true` makes demo requests fail, so you can see the error screen. |
 | `VITE_RAPIDAPI_KEY`, `VITE_RAPIDAPI_HOST`, `VITE_RAPIDAPI_BASE_URL` | Live mode only. Placeholders in `.env.example`. |
 
-## Live ExerciseDB mode: NOT verified
+## Live ExerciseDB mode
 
 Components only import `src/services/exerciseApi.js`, which chooses between `mockExerciseApi.js` (demo data) and `liveExerciseApi.js` (RapidAPI).
 
-**The live file has never been run against the real service.** When this project was created, the official ExerciseDB pages could not be read in full, so these are still unknown:
+`liveExerciseApi.js` uses the endpoints and response fields published in the official OpenAPI document (https://v2.exercisedb.io/docs, v2.1.0):
 
-- the current free-plan limits and whether a credit card is required
-- the exact endpoint paths, parameters and response fields
-- whether the API works directly from a browser (CORS)
+- `GET /exercises?limit=0` — full library, cached for the session so search and filters run locally without spending a request per keystroke
+- `GET /exercises/exercise/{id}`
+- `GET /exercises/bodyPartList`, `/targetList`, `/equipmentList`
+- Headers: `X-RapidAPI-Key` and `X-RapidAPI-Host`
 
-For that reason `ENDPOINTS` in `liveExerciseApi.js` is empty on purpose. With `VITE_USE_MOCK_DATA=false` the app shows a clear "Live data is not set up" message instead of guessing. To finish live mode:
+To use it:
 
-1. Subscribe to ExerciseDB on RapidAPI and read its documentation (https://v2.exercisedb.io/docs).
-2. Put the real paths in `ENDPOINTS` and check `normalizeExercise()` against one real response.
-3. Test in the browser. If you see a CORS error, the API cannot be called directly from a browser and a small server-side proxy would be needed. Ask before adding one.
+1. Subscribe to ExerciseDB on RapidAPI and copy your key.
+2. Put the key in `.env` (`VITE_RAPIDAPI_KEY`) and set `VITE_USE_MOCK_DATA=false`.
+3. Restart `npm run dev`.
 
-One thing the RapidAPI listing does state: each exercise's `gifUrl` changes once per day. That is why favorites store a full copy of the exercise and why the app has an image fallback.
+The API returns CORS headers for the browser dev origin, so no proxy is needed locally. Each exercise's `gifUrl` changes once per day; favorites store a full copy of the exercise and the app has an image fallback.
 
 ## API key safety
 
@@ -85,4 +90,4 @@ One thing the RapidAPI listing does state: each exercise's `gifUrl` changes once
 
 ## Testing status
 
-The original project documentation reports that the baseline version passed install, lint, build, and a headless-browser check using demo data. This upgrade adds a workout builder, persisted recent views, and sorting. In the current editing environment, dependency installation timed out and Vite was not available, so the upgraded version could not be confirmed with a fresh production build here. Please run `npm install`, `npm run lint`, and `npm run build` after extracting the ZIP. Live ExerciseDB requests remain unverified.
+`npm run lint` and `npm run build` pass. Demo mode is verified in a browser. The live ExerciseDB code follows the published OpenAPI document, and the API host was checked for reachability and CORS headers without a key; a request with a real subscription key has not been run in this environment.

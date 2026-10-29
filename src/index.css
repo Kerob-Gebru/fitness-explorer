@@ -428,6 +428,79 @@ html { scroll-behavior: smooth; }
   .dashboard-exercise__info a { display: none; }
 }
 
+/* Personal workout plans, active session tracking, and history. */
+.workout-notice { margin: 0 0 1rem; padding: .8rem 1rem; border: 1px solid rgba(46,230,214,.35); border-radius: 10px; background: rgba(46,230,214,.08); color: var(--accent); }
+.progress-overview, .active-session-section, .plans-section, .workout-builder, .history-section { margin-top: 2rem; }
+.progress-overview { padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.progress-overview .dashboard-section-heading { align-items: baseline; }
+.progress-overview__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: .75rem; }
+.activity-chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; gap: .75rem; height: 145px; margin-top: 1.25rem; padding-top: .5rem; border-top: 1px solid var(--border); }
+.activity-chart__day { display: grid; grid-template-rows: 1rem 1fr 1.3rem; justify-items: center; gap: .25rem; height: 100%; color: var(--muted); font-size: .75rem; }
+.activity-chart__count { color: var(--text); font-weight: 700; }
+.activity-chart__track { display: flex; align-items: end; width: min(100%, 42px); height: 100%; overflow: hidden; border-radius: 999px; background: var(--surface-2); }
+.activity-chart__track > span { display: block; width: 100%; border-radius: inherit; background: var(--accent); }
+.activity-chart__label { align-self: end; }
+.plan-list, .history-list { display: grid; gap: .8rem; list-style: none; }
+.plan-card, .history-card { min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.plan-card__heading, .history-card__summary { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.plan-card h3, .history-card h3 { margin: 0 0 .35rem; }
+.plan-card p, .history-card p { margin: 0 0 .25rem; }
+.plan-card small { font-size: .78rem; }
+.plan-card__actions, .history-card__actions, .active-session-actions, .plan-editor__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.plan-card__actions .btn, .history-card__actions .btn { padding: .55rem .75rem; }
+.plan-card__exercises { margin-top: .9rem; }
+.plan-editor { display: grid; gap: .8rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.plan-editor textarea, .save-plan-form textarea { resize: vertical; }
+.plan-editor__exercises { display: grid; gap: .5rem; }
+.plan-editor__exercise { display: grid; grid-template-columns: minmax(130px, 1fr) repeat(3, minmax(80px, .35fr)) auto; align-items: end; gap: .6rem; padding: .65rem; border: 1px solid var(--border); border-radius: 10px; }
+.plan-editor__exercise strong { align-self: center; }
+.plan-editor__exercise label, .active-set label { display: grid; gap: .25rem; color: var(--muted); font-size: .78rem; }
+.plan-editor__exercise input, .active-set input[type="number"] { width: 100%; min-width: 0; padding: .45rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text); font: inherit; }
+.active-session-section { padding: 1.2rem; border: 1px solid rgba(46,230,214,.4); border-radius: var(--radius); background: rgba(46,230,214,.035); }
+.active-session-section .dashboard-section-heading { align-items: center; }
+.active-session-section .dashboard-section-heading h2 { margin-bottom: .35rem; }
+.active-session-section .dashboard-section-heading p:last-child { margin: 0; font-size: .85rem; }
+.active-exercise-heading { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: .8rem; }
+.active-exercise-heading .dashboard-exercise__image { width: 64px; height: 60px; }
+.active-exercise-heading .dashboard-exercise__info h3 { margin: .2rem 0; }
+.active-exercise-heading > a { font-size: .85rem; font-weight: 700; text-decoration: none; }
+.active-set-list { display: grid; gap: .5rem; margin-top: .9rem; }
+.active-set { display: grid; grid-template-columns: minmax(55px, .5fr) minmax(90px, .6fr) minmax(130px, 1fr); align-items: center; gap: .8rem; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 9px; color: var(--muted); }
+.active-set--complete { border-color: rgba(46,230,214,.5); background: rgba(46,230,214,.07); color: var(--text); }
+.active-set .set-complete-label { display: flex; align-items: center; gap: .45rem; }
+.active-set input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+.save-plan-form { display: grid; align-content: start; gap: .75rem; }
+.save-plan-form .field { display: grid; gap: .3rem; color: var(--muted); font-size: .85rem; }
+.save-plan-form .field .input { color: var(--text); }
+.history-exercises { display: grid; gap: .75rem; margin: 1rem 0 0; padding: 1rem 0 0 1.25rem; border-top: 1px solid var(--border); }
+.history-exercises > li::marker { color: var(--accent); }
+.history-exercises ul { margin: .35rem 0 0; padding-left: 1.2rem; color: var(--muted); font-size: .88rem; }
+.history-exercises ul li::marker { color: var(--muted); }
+@media (max-width: 760px) {
+  .plan-card__heading, .history-card__summary { flex-direction: column; }
+  .plan-card__actions, .history-card__actions { width: 100%; }
+  .plan-card__actions .btn, .history-card__actions .btn { flex: 1; }
+  .plan-editor__exercise { grid-template-columns: repeat(3, minmax(65px, 1fr)); }
+  .plan-editor__exercise strong { grid-column: 1 / -1; }
+  .plan-editor__exercise > .btn { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .progress-overview { padding: .8rem; }
+  .progress-overview__stats { grid-template-columns: 1fr 1fr; }
+  .activity-chart { gap: .35rem; }
+  .active-session-section { padding: .8rem; }
+  .active-exercise-heading { grid-template-columns: 50px minmax(0, 1fr); gap: .55rem; }
+  .active-exercise-heading .dashboard-exercise__image { width: 50px; height: 50px; }
+  .active-exercise-heading > a { grid-column: 2; }
+  .active-set { grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .active-set .set-complete-label { grid-column: 1 / -1; }
+  .active-session-actions { width: 100%; }
+  .active-session-actions .btn { flex: 1; }
+}
+@media print {
+  .progress-overview, .plans-section, .active-session-section, .history-section, .save-plan-form { display: none !important; }
+}
+
 /* Exercise discovery: search, filters, cards and related exercises */
 .field { min-width: 0; }
 .field .input { width: 100%; }
@@ -459,4 +532,3 @@ html { scroll-behavior: smooth; }
 }
 .card__body { min-width: 0; }
 .card__title { overflow-wrap: anywhere; }
-

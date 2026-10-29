@@ -6,6 +6,7 @@
 import { USE_MOCK_DATA } from './config.js'
 import * as mockApi from './mockExerciseApi.js'
 import * as liveApi from './liveExerciseApi.js'
+import { NotFoundError } from './errors.js'
 
 const api = USE_MOCK_DATA ? mockApi : liveApi
 
@@ -16,6 +17,13 @@ export function getExercises(filters = {}) {
 
 // Throws NotFoundError when the id does not exist.
 export function getExerciseById(id) {
+  const exerciseId = String(id)
+  if (exerciseId.startsWith('demo-')) {
+    const localExercise = mockApi.findLocalExerciseById(exerciseId)
+    return localExercise
+      ? Promise.resolve(localExercise)
+      : Promise.reject(new NotFoundError('This sample exercise is no longer available in the local exercise library.'))
+  }
   return api.getExerciseById(id)
 }
 
