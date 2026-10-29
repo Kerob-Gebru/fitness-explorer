@@ -147,7 +147,7 @@ export default function WorkoutCalendarPage() {
       setNotice('This scheduled workout is no longer available to start.')
       return
     }
-    navigate('/workout')
+    navigate('/workout/session')
   }
 
   function chooseDay(key) {
@@ -279,7 +279,7 @@ export default function WorkoutCalendarPage() {
                   <Link to="/workout#history">View completed session</Link>
                 )}
                 {selectedWorkout.status === 'in-progress' && (
-                  <Link to="/workout">Continue active workout</Link>
+                  <Link to="/workout/session">Continue active workout</Link>
                 )}
                 {(selectedWorkout.status === 'completed' || selectedWorkout.status === 'cancelled') && (
                   <button type="button" className="btn" onClick={() => handleDelete(selectedWorkout)}>Delete calendar entry</button>

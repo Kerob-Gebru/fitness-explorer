@@ -31,7 +31,9 @@ Other commands: `npm run build` (production build), `npm run preview` (serve the
 - Exercise details page at `/exercises/:id` with demonstration media, primary and secondary muscles, equipment, numbered instructions, source-provided guidance, related exercises, and favorite/workout actions
 - Favorites page, saved in the browser (localStorage) and kept after refresh, no duplicates
 - Workout builder with add/remove controls, editable saved workout plans, and print-friendly layout
-- In-progress sessions saved locally, completed set/repetition tracking, and reviewable workout history
+- Interactive workout sessions at `/workout/session` with exercise navigation, completion/skip states, set/repetition/weight/notes tracking, an elapsed-time clock, and a controllable rest timer
+- Active session progress saved locally and recoverable after refresh; completed and early-ended sessions are retained separately, while only completed workouts count toward dashboard progress
+- Scheduled workouts launch into interactive sessions and update their calendar status on completion
 - Monthly workout calendar with persistent plan scheduling, rescheduling, cancellation, overdue status, and scheduled-session completion
 - Workout progress summary with completed workout counts, current calendar-week activity, and current/longest streaks
 - Workout plans, active session progress, scheduled workouts, and completed history share the existing `fitness-explorer-workout` localStorage key; workout data stays in this browser
@@ -50,7 +52,7 @@ src/
                             workoutProgress.js calculates history-based dashboard statistics
   hooks/                    useDebounce, useAsyncData, useDocumentTitle
   layouts/MainLayout.jsx    navbar, footer and shared route layout
-  pages/                    Home, Explore, ExerciseDetails, Favorites, Workout, NotFound
+  pages/                    Home, Explore, ExerciseDetails, Favorites, Workout, WorkoutSession, WorkoutCalendar, NotFound
   services/                 ALL data access (see below)
   utils/formatExercise.js   small formatting helpers
 ```

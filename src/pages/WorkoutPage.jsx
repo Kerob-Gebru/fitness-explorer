@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ExerciseImage from '../components/exercises/ExerciseImage.jsx'
 import EmptyState from '../components/common/EmptyState.jsx'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
@@ -10,11 +10,14 @@ import { formatLabel } from '../utils/formatExercise.js'
 const defaults = { sets: 3, reps: 12, rest: 60 }
 
 function sessionExerciseCount(session) {
-  return session.exercises.filter((exercise) => exercise.sets.some((set) => set.completed)).length
+  return session.exercises.filter((exercise) => exercise.status === 'completed' ||
+    (!exercise.status && exercise.sets.some((set) => set.completed))).length
 }
 
 export default function WorkoutPage() {
   useDocumentTitle('Workout dashboard')
+  const navigate = useNavigate()
+  const location = useLocation()
   const exercises = useWorkoutStore((state) => state.exercises)
   const settings = useWorkoutStore((state) => state.settings)
   const plans = useWorkoutStore((state) => state.plans)
@@ -30,15 +33,12 @@ export default function WorkoutPage() {
   const duplicatePlan = useWorkoutStore((state) => state.duplicatePlan)
   const deletePlan = useWorkoutStore((state) => state.deletePlan)
   const startSession = useWorkoutStore((state) => state.startSession)
-  const toggleActiveSet = useWorkoutStore((state) => state.toggleActiveSet)
-  const updateActiveSetReps = useWorkoutStore((state) => state.updateActiveSetReps)
-  const finishSession = useWorkoutStore((state) => state.finishSession)
   const cancelSession = useWorkoutStore((state) => state.cancelSession)
   const deleteHistorySession = useWorkoutStore((state) => state.deleteHistorySession)
   const [planName, setPlanName] = useState('')
   const [planDescription, setPlanDescription] = useState('')
   const [editor, setEditor] = useState(null)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState(() => location.state?.workoutNotice ?? '')
   const [openHistoryId, setOpenHistoryId] = useState(null)
 
   const stats = useMemo(() => calculateWorkoutProgress(history), [history])
@@ -109,13 +109,7 @@ export default function WorkoutPage() {
 
   function handleStart(plan) {
     if (activeSession && !window.confirm('Replace the active workout? Its unfinished progress will be discarded.')) return
-    if (startSession(plan)) setNotice(`${plan.name} started. Your progress is saved on this device.`)
-  }
-
-  function handleFinishSession() {
-    if (!window.confirm('Finish and save this workout to your history?')) return
-    finishSession()
-    setNotice('Workout completed and added to your history.')
+    if (startSession(plan)) navigate('/workout/session')
   }
 
   function handleClearBuilder() {
@@ -175,9 +169,9 @@ export default function WorkoutPage() {
       {activeSession && (
         <section className="active-session-section" aria-labelledby="active-session-title">
           <div className="dashboard-section-heading">
-            <div><p className="eyebrow">IN PROGRESS</p><h2 id="active-session-title">{activeSession.name}</h2><p className="muted">Started {formatSessionDate(activeSession.startedAt)} · progress is saved on this device</p></div>
+            <div><p className="eyebrow">{activeSession.status === 'paused' ? 'PAUSED' : 'IN PROGRESS'}</p><h2 id="active-session-title">{activeSession.name}</h2><p className="muted">Started {formatSessionDate(activeSession.startedAt)} · progress is saved on this device</p></div>
             <div className="active-session-actions">
-              <button type="button" className="btn btn--primary" onClick={handleFinishSession}>Finish workout</button>
+              <Link className="btn btn--primary" to="/workout/session">{activeSession.status === 'paused' ? 'Resume workout' : 'Open workout'}</Link>
               <button type="button" className="btn btn--danger" onClick={() => {
                 if (window.confirm('Cancel this unfinished workout? It will not be added to history.')) {
                   cancelSession()
@@ -186,26 +180,6 @@ export default function WorkoutPage() {
               }}>Cancel</button>
             </div>
           </div>
-          <ol className="dashboard-exercise-list">
-            {activeSession.exercises.map((exercise, index) => (
-              <li className="dashboard-exercise" key={exercise.id}>
-                <div className="active-exercise-heading">
-                  <ExerciseImage src={exercise.gifUrl} name={exercise.name} className="dashboard-exercise__image" />
-                  <div className="dashboard-exercise__info"><span className="dashboard-exercise__number">EXERCISE {String(index + 1).padStart(2, '0')}</span><h3>{formatLabel(exercise.name)}</h3><p>{formatLabel(exercise.target)} · {formatLabel(exercise.equipment)}</p></div>
-                  <Link to={`/exercises/${exercise.id}`}>Instructions ↗</Link>
-                </div>
-                <div className="active-set-list">
-                  {exercise.sets.map((set, setIndex) => (
-                    <div className={`active-set ${set.completed ? 'active-set--complete' : ''}`} key={setIndex}>
-                      <span>Set {setIndex + 1}</span>
-                      <label>Reps<input aria-label={`${exercise.name}, set ${setIndex + 1} repetitions`} type="number" min="0" max="100" value={set.reps} onChange={(event) => updateActiveSetReps(exercise.id, setIndex, event.target.value)} /></label>
-                      <label className="set-complete-label"><input type="checkbox" checked={set.completed} onChange={() => toggleActiveSet(exercise.id, setIndex)} /> Completed</label>
-                    </div>
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ol>
         </section>
       )}
 
@@ -306,18 +280,18 @@ export default function WorkoutPage() {
       </section>
 
       <section className="history-section" id="history" aria-labelledby="history-title">
-        <div className="dashboard-section-heading"><div><p className="eyebrow">COMPLETED SESSIONS</p><h2 id="history-title">Workout history <span className="count-pill">{history.length}</span></h2></div></div>
+        <div className="dashboard-section-heading"><div><p className="eyebrow">SESSION HISTORY</p><h2 id="history-title">Workout history <span className="count-pill">{history.length}</span></h2></div></div>
         {history.length === 0 ? (
           <EmptyState title="Your workout history will appear here" text="Complete a workout session to start building your personal progress history." />
         ) : (
           <ul className="history-list">
             {history.map((session) => (
               <li className="history-card" key={session.id}>
-                <div className="history-card__summary"><div><h3>{session.name}</h3><p className="muted">{formatSessionDate(session.completedAt)} · {sessionExerciseCount(session)} exercise{sessionExerciseCount(session) === 1 ? '' : 's'} completed{session.durationSeconds != null ? ` · ${Math.floor(session.durationSeconds / 60)} min` : ''}</p></div><div className="history-card__actions"><button type="button" className="btn" aria-expanded={openHistoryId === session.id} onClick={() => setOpenHistoryId(openHistoryId === session.id ? null : session.id)}>{openHistoryId === session.id ? 'Hide details' : 'Session details'}</button><button type="button" className="btn btn--danger" onClick={() => handleDeleteHistory(session)}>Delete</button></div></div>
+                <div className="history-card__summary"><div><h3>{session.name}</h3><p className="muted">{session.status === 'ended-early' ? 'Ended early · ' : ''}{formatSessionDate(session.completedAt)} · {sessionExerciseCount(session)} exercise{sessionExerciseCount(session) === 1 ? '' : 's'} completed{session.durationSeconds != null ? ` · ${Math.floor(session.durationSeconds / 60)} min` : ''}</p></div><div className="history-card__actions"><button type="button" className="btn" aria-expanded={openHistoryId === session.id} onClick={() => setOpenHistoryId(openHistoryId === session.id ? null : session.id)}>{openHistoryId === session.id ? 'Hide details' : 'Session details'}</button><button type="button" className="btn btn--danger" onClick={() => handleDeleteHistory(session)}>Delete</button></div></div>
                 {openHistoryId === session.id && (
                   <ol className="history-exercises">
                     {session.exercises.map((exercise) => (
-                      <li key={exercise.id}><strong>{formatLabel(exercise.name)}</strong><ul>{exercise.sets.map((set, index) => <li key={index}>Set {index + 1}: {set.completed ? `${set.reps} reps completed` : 'Not completed'}</li>)}</ul></li>
+                      <li key={exercise.id}><strong>{formatLabel(exercise.name)}</strong> · {exercise.status === 'skipped' ? 'Skipped' : exercise.status === 'completed' ? 'Completed' : 'Not completed'}<ul>{exercise.sets.map((set, index) => <li key={index}>Set {index + 1}: {set.completed ? `${set.reps} reps completed${set.weight != null ? ` · ${set.weight} (your unit)` : ''}${set.note ? ` · ${set.note}` : ''}` : 'Not completed'}</li>)}</ul></li>
                     ))}
                     {!session.exercises.length && <li className="muted">No exercise details were saved for this session.</li>}
                   </ol>

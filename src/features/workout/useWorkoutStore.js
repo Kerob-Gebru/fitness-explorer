@@ -75,23 +75,65 @@ function sanitizeSets(value) {
   return value.filter((set) => set && typeof set === 'object').slice(0, 10).map((set, index) => ({
     setNumber: Number.isInteger(set.setNumber) && set.setNumber > 0 ? set.setNumber : index + 1,
     reps: Number.isFinite(Number(set.reps)) && Number(set.reps) >= 0 ? Number(set.reps) : 0,
+    targetReps: Number.isFinite(Number(set.targetReps)) && Number(set.targetReps) >= 0
+      ? Math.min(100, Number(set.targetReps))
+      : null,
+    weight: set.weight === '' || set.weight == null
+      ? null
+      : Number.isFinite(Number(set.weight)) && Number(set.weight) >= 0 ? Number(set.weight) : null,
+    note: typeof set.note === 'string' ? set.note.slice(0, 200) : '',
     completed: set.completed === true,
   }))
 }
 
+function validTimestamp(value) {
+  return typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? value : null
+}
+
+function sanitizeRestTimer(value) {
+  if (!value || typeof value !== 'object') return null
+  const durationSeconds = Number(value.durationSeconds)
+  const remainingSeconds = Number(value.remainingSeconds)
+  if (!Number.isFinite(durationSeconds) || durationSeconds < 0 ||
+    !Number.isFinite(remainingSeconds) || remainingSeconds < 0) return null
+  return {
+    durationSeconds: Math.min(600, durationSeconds),
+    remainingSeconds: Math.min(600, remainingSeconds),
+    endsAt: validTimestamp(value.endsAt),
+    paused: value.paused === true || !validTimestamp(value.endsAt),
+  }
+}
+
 function sanitizeSession(value) {
   if (!value || typeof value !== 'object' || typeof value.id !== 'string' || typeof value.name !== 'string') return null
-  const startedAt = typeof value.startedAt === 'string' && !Number.isNaN(Date.parse(value.startedAt)) ? value.startedAt : null
+  const startedAt = validTimestamp(value.startedAt)
   if (!startedAt) return null
+  const knownStatus = value.status === 'active' || value.status === 'paused'
+  const elapsedSeconds = Number(value.elapsedSeconds)
+  const status = knownStatus ? value.status : 'paused'
+  const resumedAt = status === 'active' ? validTimestamp(value.resumedAt) : null
+  const exercises = sanitizeExercises(value.exercises).map((exercise) => ({
+    ...exercise,
+    config: sanitizeConfig(exercise.config),
+    status: ['completed', 'skipped'].includes(exercise.status) ? exercise.status : 'pending',
+    sets: sanitizeSets(exercise.sets).map((set, index) => ({
+      ...set,
+      setNumber: index + 1,
+      targetReps: set.targetReps ?? exercise.config.reps,
+    })),
+  }))
   return {
     ...value,
     name: value.name.trim().slice(0, 60) || 'Workout session',
     startedAt,
-    exercises: sanitizeExercises(value.exercises).map((exercise) => ({
-      ...exercise,
-      config: sanitizeConfig(exercise.config),
-      sets: sanitizeSets(exercise.sets),
-    })),
+    status: resumedAt ? status : 'paused',
+    resumedAt,
+    elapsedSeconds: Number.isFinite(elapsedSeconds) && elapsedSeconds >= 0 ? elapsedSeconds : 0,
+    currentExerciseIndex: Number.isInteger(value.currentExerciseIndex)
+      ? Math.min(Math.max(0, value.currentExerciseIndex), Math.max(0, exercises.length - 1))
+      : 0,
+    restTimer: sanitizeRestTimer(value.restTimer),
+    exercises,
   }
 }
 
@@ -99,8 +141,8 @@ function sanitizeHistory(value) {
   if (!Array.isArray(value)) return []
   const seen = new Set()
   return value.flatMap((session) => {
-    if (!session || session.status !== 'completed' || typeof session.id !== 'string' || seen.has(session.id)) return []
-    const completedAt = typeof session.completedAt === 'string' && !Number.isNaN(Date.parse(session.completedAt)) ? session.completedAt : null
+    if (!session || !['completed', 'ended-early'].includes(session.status) || typeof session.id !== 'string' || seen.has(session.id)) return []
+    const completedAt = validTimestamp(session.completedAt)
     if (!completedAt) return []
     seen.add(session.id)
     const startedAt = typeof session.startedAt === 'string' && !Number.isNaN(Date.parse(session.startedAt)) ? session.startedAt : completedAt
@@ -110,11 +152,13 @@ function sanitizeHistory(value) {
       startedAt,
       completedAt,
       durationSeconds: Number.isFinite(durationSeconds) && durationSeconds >= 0 ? durationSeconds : null,
-      exercises: sanitizeExercises(session.exercises).map((exercise) => ({
-        ...exercise,
-        config: sanitizeConfig(exercise.config),
-        sets: sanitizeSets(exercise.sets),
-      })),
+      exercises: sanitizeExercises(session.exercises).map((exercise) => {
+        const sets = sanitizeSets(exercise.sets)
+        const status = ['completed', 'skipped'].includes(exercise.status)
+          ? exercise.status
+          : exercise.status == null && sets.some((set) => set.completed) ? 'completed' : 'pending'
+        return { ...exercise, config: sanitizeConfig(exercise.config), status, sets }
+      }),
     }]
   })
 }
@@ -198,6 +242,7 @@ function migrateWorkoutState(persistedState, persistedVersion) {
       scheduledWorkouts: Array.isArray(persistedState.scheduledWorkouts) ? persistedState.scheduledWorkouts : [],
     }
   }
+  if (persistedVersion < 4) return { ...persistedState }
   return persistedState
 }
 
@@ -332,8 +377,12 @@ export const useWorkoutStore = create(persist((set, get) => ({
     const startedAt = new Date().toISOString()
     const exercises = snapshotExercises(plan.exercises).map((exercise) => ({
       ...exercise,
+      status: 'pending',
       sets: Array.from({ length: Math.min(10, Math.max(1, Number(exercise.config.sets) || DEFAULT_CONFIG.sets)) }, () => ({
         reps: Math.min(100, Math.max(0, Number(exercise.config.reps) || DEFAULT_CONFIG.reps)),
+        targetReps: Math.min(100, Math.max(0, Number(exercise.config.reps) || DEFAULT_CONFIG.reps)),
+        weight: null,
+        note: '',
         completed: false,
       })),
     }))
@@ -355,11 +404,132 @@ export const useWorkoutStore = create(persist((set, get) => ({
         scheduledFor: scheduledWorkout?.date ?? null,
         name: plan.name,
         startedAt,
+        status: 'active',
+        resumedAt: startedAt,
+        elapsedSeconds: 0,
+        currentExerciseIndex: 0,
+        restTimer: null,
         exercises,
       },
     }))
     return true
   },
+  setCurrentExercise: (index) => set((state) => {
+    if (!state.activeSession || !Number.isInteger(index) ||
+      index < 0 || index >= state.activeSession.exercises.length) return state
+    return {
+      activeSession: { ...state.activeSession, currentExerciseIndex: index, restTimer: null },
+    }
+  }),
+  setActiveExerciseStatus: (exerciseId, status) => {
+    if (!['pending', 'completed', 'skipped'].includes(status)) return false
+    const session = get().activeSession
+    if (!session || !session.exercises.some((exercise) => String(exercise.id) === String(exerciseId))) return false
+    set((state) => ({
+      activeSession: {
+        ...state.activeSession,
+        exercises: state.activeSession.exercises.map((exercise) =>
+          String(exercise.id) === String(exerciseId) ? { ...exercise, status } : exercise),
+      },
+    }))
+    return true
+  },
+  pauseSession: () => set((state) => {
+    const session = state.activeSession
+    if (!session || session.status !== 'active') return state
+    const now = new Date()
+    const resumedAt = validTimestamp(session.resumedAt)
+    const elapsed = resumedAt ? Math.max(0, Math.floor((now.getTime() - Date.parse(resumedAt)) / 1000)) : 0
+    const timer = session.restTimer
+    const remaining = timer && !timer.paused && timer.endsAt
+      ? Math.max(0, Math.ceil((Date.parse(timer.endsAt) - now.getTime()) / 1000))
+      : timer?.remainingSeconds
+    return {
+      activeSession: {
+        ...session,
+        status: 'paused',
+        resumedAt: null,
+        elapsedSeconds: session.elapsedSeconds + elapsed,
+        restTimer: timer ? { ...timer, remainingSeconds: remaining, endsAt: null, paused: true } : null,
+      },
+    }
+  }),
+  resumeSession: () => set((state) => {
+    const session = state.activeSession
+    if (!session || session.status !== 'paused') return state
+    const now = new Date().toISOString()
+    const timer = session.restTimer
+    return {
+      activeSession: {
+        ...session,
+        status: 'active',
+        resumedAt: now,
+        restTimer: timer
+          ? { ...timer, endsAt: new Date(Date.now() + timer.remainingSeconds * 1000).toISOString(), paused: false }
+          : null,
+      },
+    }
+  }),
+  startRestTimer: (durationSeconds) => set((state) => {
+    if (!state.activeSession || state.activeSession.status !== 'active') return state
+    const duration = Number(durationSeconds)
+    if (!Number.isFinite(duration) || duration < 0 || duration > 600) return state
+    const now = Date.now()
+    return {
+      activeSession: {
+        ...state.activeSession,
+        restTimer: {
+          durationSeconds: duration,
+          remainingSeconds: duration,
+          endsAt: new Date(now + duration * 1000).toISOString(),
+          paused: false,
+        },
+      },
+    }
+  }),
+  pauseRestTimer: () => set((state) => {
+    const timer = state.activeSession?.restTimer
+    if (!timer || timer.paused || !timer.endsAt) return state
+    return {
+      activeSession: {
+        ...state.activeSession,
+        restTimer: {
+          ...timer,
+          remainingSeconds: Math.max(0, Math.ceil((Date.parse(timer.endsAt) - Date.now()) / 1000)),
+          endsAt: null,
+          paused: true,
+        },
+      },
+    }
+  }),
+  resumeRestTimer: () => set((state) => {
+    const timer = state.activeSession?.restTimer
+    if (!timer || !timer.paused) return state
+    return {
+      activeSession: {
+        ...state.activeSession,
+        restTimer: { ...timer, endsAt: new Date(Date.now() + timer.remainingSeconds * 1000).toISOString(), paused: false },
+      },
+    }
+  }),
+  resetRestTimer: (durationSeconds) => {
+    const state = get()
+    if (!state.activeSession) return
+    const currentExercise = state.activeSession.exercises[state.activeSession.currentExerciseIndex]
+    const duration = Number(durationSeconds ?? currentExercise?.config?.rest ?? DEFAULT_CONFIG.rest)
+    if (!Number.isFinite(duration) || duration < 0 || duration > 600) return
+    set((current) => ({
+      activeSession: current.activeSession
+        ? {
+          ...current.activeSession,
+          restTimer: { durationSeconds: duration, remainingSeconds: duration, endsAt: null, paused: true },
+        }
+        : null,
+    }))
+  },
+  skipRestTimer: () => set((state) => state.activeSession
+    ? { activeSession: { ...state.activeSession, restTimer: null } }
+    : state),
   toggleActiveSet: (exerciseId, setIndex) => set((state) => {
     if (!state.activeSession) return state
     return {
@@ -384,21 +554,51 @@ export const useWorkoutStore = create(persist((set, get) => ({
       },
     }
   }),
-  finishSession: () => set((state) => {
+  updateActiveSetWeight: (exerciseId, setIndex, weight) => set((state) => {
     if (!state.activeSession) return state
+    const value = weight === '' || weight == null ? null : Number(weight)
+    if (value !== null && (!Number.isFinite(value) || value < 0 || value > 10000)) return state
+    return {
+      activeSession: {
+        ...state.activeSession,
+        exercises: state.activeSession.exercises.map((exercise) => String(exercise.id) !== String(exerciseId)
+          ? exercise
+          : { ...exercise, sets: exercise.sets.map((setItem, index) => index === setIndex ? { ...setItem, weight: value } : setItem) }),
+      },
+    }
+  }),
+  updateActiveSetNote: (exerciseId, setIndex, note) => set((state) => {
+    if (!state.activeSession || typeof note !== 'string') return state
+    return {
+      activeSession: {
+        ...state.activeSession,
+        exercises: state.activeSession.exercises.map((exercise) => String(exercise.id) !== String(exerciseId)
+          ? exercise
+          : { ...exercise, sets: exercise.sets.map((setItem, index) => index === setIndex ? { ...setItem, note: note.slice(0, 200) } : setItem) }),
+      },
+    }
+  }),
+  finishSession: (outcome = 'completed') => set((state) => {
+    if (!state.activeSession || !['completed', 'ended-early'].includes(outcome)) return state
     const completedAt = new Date().toISOString()
-    const elapsed = Math.floor((Date.parse(completedAt) - Date.parse(state.activeSession.startedAt)) / 1000)
+    const resumedAt = validTimestamp(state.activeSession.resumedAt)
+    const elapsed = state.activeSession.elapsedSeconds +
+      (state.activeSession.status === 'active' && resumedAt ? Math.floor((Date.parse(completedAt) - Date.parse(resumedAt)) / 1000) : 0)
     const session = {
       ...state.activeSession,
-      status: 'completed',
+      status: outcome,
       completedAt,
-      durationSeconds: Number.isFinite(elapsed) && elapsed >= 0 ? elapsed : null,
+      durationSeconds: Number.isFinite(elapsed) && elapsed >= 0 ? elapsed : 0,
+      resumedAt: null,
+      restTimer: null,
     }
     return {
       history: [session, ...state.history.filter((item) => item.id !== session.id)],
       scheduledWorkouts: session.scheduledWorkoutId
         ? state.scheduledWorkouts.map((item) => item.id === session.scheduledWorkoutId && item.status === 'in-progress'
-          ? { ...item, status: 'completed', completedSessionId: session.id, updatedAt: completedAt }
+          ? outcome === 'completed'
+            ? { ...item, status: 'completed', completedSessionId: session.id, updatedAt: completedAt }
+            : { ...item, status: 'scheduled', updatedAt: completedAt }
           : item)
         : state.scheduledWorkouts,
       activeSession: null,
@@ -415,7 +615,7 @@ export const useWorkoutStore = create(persist((set, get) => ({
   deleteHistorySession: (id) => set((state) => ({ history: state.history.filter((session) => session.id !== id) })),
 }), {
   name: 'fitness-explorer-workout',
-  version: 3,
+  version: 4,
   migrate: migrateWorkoutState,
   partialize: (state) => ({
     exercises: state.exercises,

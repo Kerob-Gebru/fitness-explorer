@@ -81,7 +81,8 @@ export function calculateWorkoutProgress(history, now = new Date()) {
   }
 
   const exercisesCompleted = sessions.reduce((total, session) => total + (Array.isArray(session.exercises)
-    ? session.exercises.filter((exercise) => Array.isArray(exercise.sets) && exercise.sets.some((set) => set?.completed === true)).length
+    ? session.exercises.filter((exercise) => exercise.status === 'completed' ||
+      (!exercise.status && Array.isArray(exercise.sets) && exercise.sets.some((set) => set?.completed === true))).length
     : 0), 0)
 
   return {
