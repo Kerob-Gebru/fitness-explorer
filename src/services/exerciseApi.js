@@ -15,6 +15,10 @@ export function getExercises(filters = {}) {
   return api.getExercises(filters)
 }
 
+export function getLocalExercises(filters = {}) {
+  return mockApi.getExercises(filters)
+}
+
 // Throws NotFoundError when the id does not exist.
 export function getExerciseById(id) {
   const exerciseId = String(id)

@@ -22,35 +22,74 @@ export function pickFeatured(exercises, count = 6) {
 // body part, equipment and secondary muscles) and returns the best `limit`.
 // Ties fall back to name, so the same exercise always gets the same list.
 export function rankRelatedExercises(current, pool, limit = 6) {
+  return rankExerciseAlternatives(current, pool)
+    .slice(0, limit)
+    .map(({ exercise }) => exercise)
+}
+
+function comparableValues(value) {
+  const entries = Array.isArray(value) ? value : [value]
+  return [...new Set(entries
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map(normalizeText))]
+}
+
+function sharedValues(first, second) {
+  const secondValues = new Set(comparableValues(second))
+  return comparableValues(first).filter((value) => secondValues.has(value))
+}
+
+export function rankExerciseAlternatives(current, pool) {
   if (!current || !Array.isArray(pool)) return []
 
-  const target = normalizeText(current.target)
-  const bodyPart = normalizeText(current.bodyPart)
-  const equipment = normalizeText(current.equipment)
-  const secondary = new Set(
-    (Array.isArray(current.secondaryMuscles) ? current.secondaryMuscles : []).map(normalizeText),
-  )
+  const currentTargets = comparableValues(current.target)
+  const currentBodyParts = comparableValues(current.bodyPart)
+  const currentEquipment = comparableValues(current.equipment)
+  const currentCategories = comparableValues(current.category)
+  const currentSecondary = comparableValues(current.secondaryMuscles)
+  const seen = new Set([String(current.id)])
+  const candidates = []
 
-  const scored = []
   pool.forEach((exercise, index) => {
-    if (!exercise || String(exercise.id) === String(current.id)) return
+    if (!exercise || exercise.id == null || !normalizeText(exercise.name)) return
+    const id = String(exercise.id)
+    if (!id || id === 'undefined' || id === 'null' || seen.has(id)) return
+    seen.add(id)
 
+    const sharedTargets = sharedValues(currentTargets, exercise.target)
+    const sharedBodyParts = sharedValues(currentBodyParts, exercise.bodyPart)
+    const sharedSecondary = sharedValues(currentSecondary, exercise.secondaryMuscles)
+    const sharedCategories = sharedValues(currentCategories, exercise.category)
+    const sameEquipment = sharedValues(currentEquipment, exercise.equipment).length > 0
+
+    if (!sharedTargets.length && !(sharedBodyParts.length && (sharedSecondary.length || sharedCategories.length))) return
+
+    const reasons = []
     let score = 0
-    if (target && normalizeText(exercise.target) === target) score += 8
-    if (bodyPart && normalizeText(exercise.bodyPart) === bodyPart) score += 4
-    if (equipment && normalizeText(exercise.equipment) === equipment) score += 2
-    const sharedSecondary = (Array.isArray(exercise.secondaryMuscles) ? exercise.secondaryMuscles : [])
-      .filter((muscle) => secondary.has(normalizeText(muscle))).length
-    score += Math.min(sharedSecondary, 3)
+    if (sharedTargets.length) {
+      score += 12
+      reasons.push('Shares the primary target muscle.')
+    }
+    if (sharedBodyParts.length) {
+      score += 5
+      if (!sharedTargets.length) reasons.push('Shares the body part and secondary muscle or category.')
+    }
+    if (sameEquipment) {
+      score += 2
+      if (reasons.length < 2) reasons.push('Uses similar equipment.')
+    } else if (currentEquipment.length && comparableValues(exercise.equipment).length) {
+      reasons.push('Uses different equipment.')
+    }
+    if (sharedCategories.length) score += 3
+    score += Math.min(sharedSecondary.length, 3)
 
-    if (score > 0) scored.push({ exercise, score, index })
+    candidates.push({ exercise, score, reasons, index })
   })
 
-  scored.sort((a, b) =>
-    b.score - a.score ||
-    normalizeText(a.exercise.name).localeCompare(normalizeText(b.exercise.name)) ||
-    a.index - b.index,
-  )
+  candidates.sort((first, second) =>
+    second.score - first.score ||
+    normalizeText(first.exercise.name).localeCompare(normalizeText(second.exercise.name)) ||
+    first.index - second.index)
 
-  return scored.slice(0, limit).map((item) => item.exercise)
+  return candidates.map(({ exercise, reasons }) => ({ exercise, reasons }))
 }

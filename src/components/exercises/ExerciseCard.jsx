@@ -7,7 +7,7 @@ import { formatLabel } from '../../utils/formatExercise.js'
 
 const FEEDBACK_MS = 2200
 
-export default function ExerciseCard({ exercise }) {
+export default function ExerciseCard({ exercise, reason, onReplace, replaceLabel = 'Replace in selected plan', replaceDisabled = false }) {
   const [feedback, setFeedback] = useState('')
   const feedbackTimer = useRef(null)
 
@@ -20,7 +20,7 @@ export default function ExerciseCard({ exercise }) {
   }
 
   return (
-    <article className="card">
+    <article className={`card${reason || onReplace ? ' card--alternative' : ''}`}>
       <Link to={`/exercises/${exercise.id}`} className="card__link">
         <ExerciseImage src={exercise.gifUrl} name={exercise.name} />
         <div className="card__body">
@@ -30,6 +30,7 @@ export default function ExerciseCard({ exercise }) {
             <li className="chip">{formatLabel(exercise.bodyPart, 'Body part unknown')}</li>
             <li className="chip">{formatLabel(exercise.equipment, 'Equipment unknown')}</li>
           </ul>
+          {reason && <p className="card__reason">{reason}</p>}
         </div>
       </Link>
       <div className="card__fav">
@@ -38,6 +39,19 @@ export default function ExerciseCard({ exercise }) {
       <div className="card__workout">
         <WorkoutButton exercise={exercise} compact onToggle={(selected) => announce(selected ? 'Added to your workout' : 'Removed from your workout')} />
       </div>
+      {onReplace && (
+        <div className="card__replace">
+          <button
+            type="button"
+            className="btn"
+            disabled={replaceDisabled}
+            aria-label={`${replaceLabel}: ${formatLabel(exercise.name)}`}
+            onClick={() => onReplace(exercise, announce)}
+          >
+            {replaceLabel}
+          </button>
+        </div>
+      )}
       {feedback && (
         <p className="card__feedback" role="status">
           {feedback}

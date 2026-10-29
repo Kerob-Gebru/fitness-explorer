@@ -137,6 +137,46 @@ function sanitizePlans(value) {
   })
 }
 
+function isValidDateKey(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
+function sanitizeScheduledWorkouts(value) {
+  if (!Array.isArray(value)) return []
+  const seen = new Set()
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object' || typeof item.id !== 'string' || seen.has(item.id) ||
+      typeof item.planId !== 'string' || !isValidDateKey(item.date) ||
+      !['scheduled', 'in-progress', 'completed', 'cancelled'].includes(item.status)) return []
+    const time = typeof item.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(item.time) ? item.time : ''
+    const createdAt = typeof item.createdAt === 'string' && !Number.isNaN(Date.parse(item.createdAt))
+      ? item.createdAt
+      : new Date().toISOString()
+    const updatedAt = typeof item.updatedAt === 'string' && !Number.isNaN(Date.parse(item.updatedAt))
+      ? item.updatedAt
+      : createdAt
+    const exercises = snapshotExercises(item.exercises)
+    if (!exercises.length || typeof item.name !== 'string' || !item.name.trim()) return []
+    seen.add(item.id)
+    return [{
+      id: item.id,
+      planId: item.planId,
+      name: item.name.trim().slice(0, 60),
+      exercises,
+      date: item.date,
+      time,
+      note: typeof item.note === 'string' ? item.note.slice(0, 300) : '',
+      status: item.status,
+      completedSessionId: typeof item.completedSessionId === 'string' ? item.completedSessionId : null,
+      createdAt,
+      updatedAt,
+    }]
+  })
+}
+
 function newId() {
   return globalThis.crypto?.randomUUID?.() ?? `workout-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
@@ -149,6 +189,13 @@ function migrateWorkoutState(persistedState, persistedVersion) {
       plans: Array.isArray(persistedState.plans) ? persistedState.plans : [],
       history: Array.isArray(persistedState.history) ? persistedState.history : [],
       activeSession: persistedState.activeSession ?? null,
+      scheduledWorkouts: Array.isArray(persistedState.scheduledWorkouts) ? persistedState.scheduledWorkouts : [],
+    }
+  }
+  if (persistedVersion < 3) {
+    return {
+      ...persistedState,
+      scheduledWorkouts: Array.isArray(persistedState.scheduledWorkouts) ? persistedState.scheduledWorkouts : [],
     }
   }
   return persistedState
@@ -159,6 +206,7 @@ export const useWorkoutStore = create(persist((set, get) => ({
   settings: { ...DEFAULT_SETTINGS },
   plans: [],
   history: [],
+  scheduledWorkouts: [],
   activeSession: null,
   addExercise: (exercise) => {
     if (get().exercises.some((item) => String(item.id) === String(exercise.id))) return
@@ -217,7 +265,70 @@ export const useWorkoutStore = create(persist((set, get) => ({
     return { plans: [copy, ...state.plans] }
   }),
   deletePlan: (id) => set((state) => ({ plans: state.plans.filter((item) => item.id !== id) })),
-  startSession: (plan) => {
+  replaceExerciseInPlan: (planId, exerciseId, replacement) => {
+    if (!isValidExercise(replacement)) return false
+    const state = get()
+    const plan = state.plans.find((item) => item.id === planId)
+    if (!plan) return false
+    const exerciseIndex = plan.exercises.findIndex((item) => String(item.id) === String(exerciseId))
+    if (exerciseIndex < 0 || plan.exercises.some((item) => String(item.id) === String(replacement.id))) return false
+
+    const exercises = [...plan.exercises]
+    exercises[exerciseIndex] = { ...replacement, config: exercises[exerciseIndex].config }
+    set((current) => ({
+      plans: current.plans.map((item) => item.id === planId
+        ? { ...item, exercises, updatedAt: new Date().toISOString() }
+        : item),
+    }))
+    return true
+  },
+  saveScheduledWorkout: ({ id, planId, date, time = '', note = '' }) => {
+    if (typeof planId !== 'string' || !isValidDateKey(date) ||
+      (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))) return false
+    const state = get()
+    const existing = id ? state.scheduledWorkouts.find((item) => item.id === id && item.status === 'scheduled') : null
+    if (id && !existing) return false
+    const plan = state.plans.find((item) => item.id === planId)
+    const planSnapshot = plan ?? (existing?.planId === planId ? existing : null)
+    if (!planSnapshot || !planSnapshot.exercises.length) return false
+    const now = new Date().toISOString()
+    const scheduledWorkout = {
+      id: existing?.id ?? newId(),
+      planId,
+      name: planSnapshot.name,
+      exercises: snapshotExercises(planSnapshot.exercises),
+      date,
+      time,
+      note: typeof note === 'string' ? note.trim().slice(0, 300) : '',
+      status: 'scheduled',
+      completedSessionId: null,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    }
+    set((current) => ({
+      scheduledWorkouts: existing
+        ? current.scheduledWorkouts.map((item) => item.id === existing.id ? scheduledWorkout : item)
+        : [scheduledWorkout, ...current.scheduledWorkouts],
+    }))
+    return true
+  },
+  cancelScheduledWorkout: (id) => set((state) => ({
+    scheduledWorkouts: state.scheduledWorkouts.map((item) =>
+      item.id === id && item.status === 'scheduled'
+        ? { ...item, status: 'cancelled', updatedAt: new Date().toISOString() }
+        : item),
+  })),
+  deleteScheduledWorkout: (id) => set((state) => ({
+    scheduledWorkouts: state.scheduledWorkouts.filter((item) => item.id !== id),
+  })),
+  startSession: (plan, scheduledWorkoutId = null) => {
+    const current = get()
+    const scheduledWorkout = scheduledWorkoutId
+      ? current.scheduledWorkouts.find((item) => item.id === scheduledWorkoutId)
+      : null
+    if (scheduledWorkoutId) {
+      if (!scheduledWorkout || scheduledWorkout.status !== 'scheduled') return false
+    }
     const startedAt = new Date().toISOString()
     const exercises = snapshotExercises(plan.exercises).map((exercise) => ({
       ...exercise,
@@ -227,7 +338,26 @@ export const useWorkoutStore = create(persist((set, get) => ({
       })),
     }))
     if (!exercises.length) return false
-    set({ activeSession: { id: newId(), planId: plan.id ?? null, name: plan.name, startedAt, exercises } })
+    set((state) => ({
+      scheduledWorkouts: state.scheduledWorkouts.map((item) => {
+        if (scheduledWorkoutId && item.id === scheduledWorkoutId && item.status === 'scheduled') {
+          return { ...item, status: 'in-progress', updatedAt: startedAt }
+        }
+        if (state.activeSession?.scheduledWorkoutId === item.id && item.status === 'in-progress') {
+          return { ...item, status: 'scheduled', updatedAt: startedAt }
+        }
+        return item
+      }),
+      activeSession: {
+        id: newId(),
+        planId: plan.planId ?? plan.id ?? null,
+        scheduledWorkoutId,
+        scheduledFor: scheduledWorkout?.date ?? null,
+        name: plan.name,
+        startedAt,
+        exercises,
+      },
+    }))
     return true
   },
   toggleActiveSet: (exerciseId, setIndex) => set((state) => {
@@ -264,19 +394,35 @@ export const useWorkoutStore = create(persist((set, get) => ({
       completedAt,
       durationSeconds: Number.isFinite(elapsed) && elapsed >= 0 ? elapsed : null,
     }
-    return { history: [session, ...state.history.filter((item) => item.id !== session.id)], activeSession: null }
+    return {
+      history: [session, ...state.history.filter((item) => item.id !== session.id)],
+      scheduledWorkouts: session.scheduledWorkoutId
+        ? state.scheduledWorkouts.map((item) => item.id === session.scheduledWorkoutId && item.status === 'in-progress'
+          ? { ...item, status: 'completed', completedSessionId: session.id, updatedAt: completedAt }
+          : item)
+        : state.scheduledWorkouts,
+      activeSession: null,
+    }
   }),
-  cancelSession: () => set({ activeSession: null }),
+  cancelSession: () => set((state) => ({
+    scheduledWorkouts: state.activeSession?.scheduledWorkoutId
+      ? state.scheduledWorkouts.map((item) => item.id === state.activeSession.scheduledWorkoutId && item.status === 'in-progress'
+        ? { ...item, status: 'scheduled', updatedAt: new Date().toISOString() }
+        : item)
+      : state.scheduledWorkouts,
+    activeSession: null,
+  })),
   deleteHistorySession: (id) => set((state) => ({ history: state.history.filter((session) => session.id !== id) })),
 }), {
   name: 'fitness-explorer-workout',
-  version: 2,
+  version: 3,
   migrate: migrateWorkoutState,
   partialize: (state) => ({
     exercises: state.exercises,
     settings: state.settings,
     plans: state.plans,
     history: state.history,
+    scheduledWorkouts: state.scheduledWorkouts,
     activeSession: state.activeSession,
   }),
   merge: (persisted, current) => ({
@@ -285,6 +431,7 @@ export const useWorkoutStore = create(persist((set, get) => ({
     settings: sanitizeSettings(persisted?.settings),
     plans: sanitizePlans(persisted?.plans),
     history: sanitizeHistory(persisted?.history),
+    scheduledWorkouts: sanitizeScheduledWorkouts(persisted?.scheduledWorkouts),
     activeSession: sanitizeSession(persisted?.activeSession),
   }),
 }))

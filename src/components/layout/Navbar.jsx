@@ -41,6 +41,11 @@ export default function Navbar() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/calendar" className={linkClass}>
+                Calendar
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/favorites" className={linkClass}>
                 Favorites
                 <span className="nav__count" aria-label={`${favoriteCount} saved`}>

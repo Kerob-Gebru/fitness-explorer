@@ -18,7 +18,7 @@ export default function ExerciseImage({ src, name, className = '' }) {
   }
 
   return (
-    <div className={`exercise-image exercise-image--empty ${className}`} role="img" aria-label="No demonstration available">
+    <div className={`exercise-image exercise-image--empty ${className}`} role="img" aria-label={`No demonstration available for ${name}`}>
       <svg viewBox="0 0 32 32" width="48" height="48" aria-hidden="true">
         <path
           d="M5 12v8M9 9v14M23 9v14M27 12v8M9 16h14"

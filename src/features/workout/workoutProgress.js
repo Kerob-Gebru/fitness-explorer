@@ -40,8 +40,11 @@ export function calculateWorkoutProgress(history, now = new Date()) {
   }
 
   const todayKey = localDateKey(currentDate)
+  const mondayOffset = (currentDate.getDay() + 6) % 7
+  const weekStart = dayOffset(currentDate, -mondayOffset)
+  const weekStartKey = localDateKey(weekStart)
   const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const date = dayOffset(currentDate, index - 6)
+    const date = dayOffset(weekStart, index)
     const key = localDateKey(date)
     return {
       date: key,
@@ -49,7 +52,6 @@ export function calculateWorkoutProgress(history, now = new Date()) {
       count: sessions.filter((session) => localDateKey(session.completedAt) === key).length,
     }
   })
-  const weekStartKey = weekDays[0].date
   const weeklyWorkouts = sessions.filter((session) => {
     const key = localDateKey(session.completedAt)
     return key >= weekStartKey && key <= todayKey

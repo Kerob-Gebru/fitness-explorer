@@ -82,15 +82,33 @@ async function request(path, params = {}) {
 }
 
 function normalizeExercise(raw) {
+  const textList = (value) => {
+    const entries = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+    return entries.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim())
+  }
+  const optionalText = (value) => {
+    if (typeof value === 'string') return value.trim()
+    if (Array.isArray(value)) return textList(value)
+    return null
+  }
+  const category = optionalText(raw.category)
+  const difficulty = optionalText(raw.difficulty)
   return {
-    id: String(raw.id),
-    name: raw.name ?? 'Unnamed exercise',
+    id: raw.id == null ? '' : String(raw.id).trim(),
+    name: typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : 'Unnamed exercise',
     bodyPart: raw.bodyPart ?? '',
     target: raw.target ?? '',
     equipment: raw.equipment ?? '',
-    secondaryMuscles: Array.isArray(raw.secondaryMuscles) ? raw.secondaryMuscles : [],
-    instructions: Array.isArray(raw.instructions) ? raw.instructions : [],
-    gifUrl: raw.gifUrl ?? null,
+    secondaryMuscles: textList(raw.secondaryMuscles),
+    instructions: Array.isArray(raw.instructions)
+      ? textList(raw.instructions)
+      : typeof raw.instructions === 'string' ? raw.instructions : [],
+    gifUrl: typeof raw.gifUrl === 'string' && raw.gifUrl.trim() ? raw.gifUrl : null,
+    ...(category?.length ? { category } : {}),
+    ...(difficulty?.length ? { difficulty } : {}),
+    ...(textList(raw.tips).length ? { tips: textList(raw.tips) } : {}),
+    ...(textList(raw.commonMistakes).length ? { commonMistakes: textList(raw.commonMistakes) } : {}),
+    ...(textList(raw.safetyConsiderations).length ? { safetyConsiderations: textList(raw.safetyConsiderations) } : {}),
     source: 'api',
   }
 }
@@ -106,7 +124,7 @@ function loadLibrary() {
         if (!Array.isArray(data)) {
           throw new ApiRequestError('Unexpected response format from the API.')
         }
-        libraryCache = data.map(normalizeExercise)
+        libraryCache = data.map(normalizeExercise).filter((exercise) => exercise.id)
         return libraryCache
       })
       .catch((error) => {
@@ -139,7 +157,7 @@ export async function getExerciseById(id) {
   if (!exerciseRequests.has(exerciseId)) {
     const requestPromise = request(ENDPOINTS.byId(exerciseId))
       .then((data) => {
-        if (!data || typeof data !== 'object') throw new NotFoundError()
+        if (!data || typeof data !== 'object' || String(data.id).trim() !== exerciseId) throw new NotFoundError()
         return normalizeExercise(data)
       })
       .finally(() => exerciseRequests.delete(exerciseId))

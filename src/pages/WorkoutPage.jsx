@@ -150,15 +150,15 @@ export default function WorkoutPage() {
       {notice && <p className="workout-notice" role="status">{notice}</p>}
 
       <section className="progress-overview" aria-labelledby="progress-title">
-        <div className="dashboard-section-heading"><div><p className="eyebrow">YOUR PROGRESS</p><h2 id="progress-title">Training summary</h2></div><span className="muted">Weekly activity: last 7 days, including today</span></div>
+        <div className="dashboard-section-heading"><div><p className="eyebrow">YOUR PROGRESS</p><h2 id="progress-title">Training summary</h2></div><span className="muted">Calendar week: Monday through Sunday</span></div>
         <div className="progress-overview__stats">
           <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">✓</span><div><p className="muted">Completed workouts</p><strong>{stats.totalWorkouts}</strong></div></article>
           <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">▦</span><div><p className="muted">Workouts this week</p><strong>{stats.weeklyWorkouts}</strong></div></article>
-          <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">↗</span><div><p className="muted">Current streak</p><strong>{stats.currentStreak}<small> days</small></strong></div></article>
-          <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">★</span><div><p className="muted">Longest streak</p><strong>{stats.longestStreak}<small> days</small></strong></div></article>
+          <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">↗</span><div><p className="muted">Current streak</p><strong>{stats.currentStreak}<small> {stats.currentStreak === 1 ? 'day' : 'days'}</small></strong></div></article>
+          <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">★</span><div><p className="muted">Longest streak</p><strong>{stats.longestStreak}<small> {stats.longestStreak === 1 ? 'day' : 'days'}</small></strong></div></article>
           <article className="dashboard-stat"><span className="dashboard-stat__icon" aria-hidden="true">▤</span><div><p className="muted">Exercises completed</p><strong>{stats.exercisesCompleted}</strong></div></article>
         </div>
-        <div className="activity-chart" role="img" aria-label={`Workout activity over the last seven days: ${stats.weekDays.map((day) => `${day.label} ${day.count}`).join(', ')}`}>
+        <div className="activity-chart" role="img" aria-label={`Completed workouts this calendar week: ${stats.weekDays.map((day) => `${day.label} ${day.count}`).join(', ')}`}>
           {stats.weekDays.map((day) => {
             const maximum = Math.max(1, ...stats.weekDays.map((item) => item.count))
             return (
@@ -209,7 +209,7 @@ export default function WorkoutPage() {
         </section>
       )}
 
-      <section className="plans-section" aria-labelledby="plans-title">
+      <section className="plans-section" id="plans" aria-labelledby="plans-title">
         <div className="dashboard-section-heading"><div><p className="eyebrow">REUSABLE ROUTINES</p><h2 id="plans-title">Saved workout plans <span className="count-pill">{plans.length}</span></h2></div><Link to="/explore" className="btn">Browse exercises</Link></div>
         {plans.length === 0 ? (
           <p className="muted">No saved plans yet. Add exercises in the builder below, then save them as a reusable plan.</p>
@@ -218,7 +218,7 @@ export default function WorkoutPage() {
             {plans.map((plan) => (
               <li className="plan-card" key={plan.id}>
                 <div className="plan-card__heading"><div><h3>{plan.name}</h3><p className="muted">{plan.description || 'No description'} · {plan.exercises.length} exercise{plan.exercises.length === 1 ? '' : 's'}</p><small className="muted">Updated {formatSessionDate(plan.updatedAt)}</small></div>
-                  <div className="plan-card__actions"><button type="button" className="btn btn--primary" onClick={() => handleStart(plan)}>Start workout</button><button type="button" className="btn" onClick={() => beginEdit(plan)}>Edit</button><button type="button" className="btn" onClick={() => { duplicatePlan(plan.id); setNotice(`“${plan.name}” duplicated.`) }}>Duplicate</button><button type="button" className="btn btn--danger" onClick={() => handleDeletePlan(plan)}>Delete</button></div>
+                  <div className="plan-card__actions"><Link type="button" className="btn" to={`/calendar?plan=${encodeURIComponent(plan.id)}`}>Schedule</Link><button type="button" className="btn btn--primary" onClick={() => handleStart(plan)}>Start workout</button><button type="button" className="btn" onClick={() => beginEdit(plan)}>Edit</button><button type="button" className="btn" onClick={() => { duplicatePlan(plan.id); setNotice(`“${plan.name}” duplicated.`) }}>Duplicate</button><button type="button" className="btn btn--danger" onClick={() => handleDeletePlan(plan)}>Delete</button></div>
                 </div>
                 <ul className="chips plan-card__exercises">{plan.exercises.map((exercise) => <li className="chip" key={exercise.id}>{formatLabel(exercise.name)} · {exercise.config.sets} × {exercise.config.reps}</li>)}</ul>
                 {editor?.id === plan.id && (
@@ -305,7 +305,7 @@ export default function WorkoutPage() {
         )}
       </section>
 
-      <section className="history-section" aria-labelledby="history-title">
+      <section className="history-section" id="history" aria-labelledby="history-title">
         <div className="dashboard-section-heading"><div><p className="eyebrow">COMPLETED SESSIONS</p><h2 id="history-title">Workout history <span className="count-pill">{history.length}</span></h2></div></div>
         {history.length === 0 ? (
           <EmptyState title="Your workout history will appear here" text="Complete a workout session to start building your personal progress history." />

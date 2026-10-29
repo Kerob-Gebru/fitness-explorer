@@ -26,14 +26,15 @@ Other commands: `npm run build` (production build), `npm run preview` (serve the
 
 ## Features
 
-- Home page with search, body-part shortcuts and featured exercises
+- Personalized home dashboard with activity summaries, calendar-week chart, recent completed workouts, saved plans, quick actions, and exercise discovery
 - Explore page with debounced name search, filters (body part, target muscle, equipment) and "Show more"
-- Exercise details page at `/exercises/:id` with facts, instructions and a favorite button
+- Exercise details page at `/exercises/:id` with demonstration media, primary and secondary muscles, equipment, numbered instructions, source-provided guidance, related exercises, and favorite/workout actions
 - Favorites page, saved in the browser (localStorage) and kept after refresh, no duplicates
 - Workout builder with add/remove controls, editable saved workout plans, and print-friendly layout
 - In-progress sessions saved locally, completed set/repetition tracking, and reviewable workout history
-- Progress dashboard with completed workout counts, a seven-day activity chart, and current/longest streaks
-- Workout plans, active session progress, and completed history share the existing `fitness-explorer-workout` localStorage key; workout data stays in this browser
+- Monthly workout calendar with persistent plan scheduling, rescheduling, cancellation, overdue status, and scheduled-session completion
+- Workout progress summary with completed workout counts, current calendar-week activity, and current/longest streaks
+- Workout plans, active session progress, scheduled workouts, and completed history share the existing `fitness-explorer-workout` localStorage key; workout data stays in this browser
 - Recently viewed exercises on the homepage, saved locally
 - Explore sorting by recommended order, name A–Z, name Z–A, and body part
 - Loading, error, empty-result and empty-favorites states; image fallback; friendly not-found pages
