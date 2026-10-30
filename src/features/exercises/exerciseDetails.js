@@ -1,3 +1,5 @@
+import { getVerifiedExerciseDemo } from './exerciseDemoLibrary.js'
+
 export function normalizeExerciseValues(value) {
   const values = Array.isArray(value) ? value : [value]
   const seen = new Set()
@@ -28,17 +30,34 @@ export function normalizeExerciseInstructions(value) {
 export function normalizeExerciseMedia(exercise) {
   if (!exercise || typeof exercise !== 'object') return []
   const media = []
-  for (const [type, field] of [['gif', 'gifUrl'], ['video', 'videoUrl'], ['image', 'imageUrl']]) {
-    const value = exercise[field]
-    if (typeof value !== 'string' || !value.trim()) continue
+  const validUrl = (value) => {
+    if (typeof value !== 'string' || !value.trim()) return null
     try {
       const url = new URL(value.trim())
-      if (url.protocol !== 'https:' && url.protocol !== 'http:') continue
-      if (url.username || url.password) continue
-      media.push({ type, url: url.href })
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+      if (url.username || url.password) return null
+      return url.href
     } catch {
-      continue
+      return null
     }
+  }
+  const apiGif = validUrl(exercise.gifUrl)
+  if (apiGif) media.push({ type: 'gif', url: apiGif, source: 'exercise-record' })
+
+  const localDemo = getVerifiedExerciseDemo(exercise)
+  if (localDemo) {
+    media.push({
+      type: 'gif',
+      url: localDemo.url,
+      source: 'verified-local',
+      attribution: localDemo.attribution,
+    })
+  }
+
+  for (const [type, field] of [['video', 'videoUrl'], ['image', 'imageUrl']]) {
+    const value = exercise[field]
+    const url = validUrl(value)
+    if (url) media.push({ type, url, source: 'exercise-record' })
   }
   return media
 }

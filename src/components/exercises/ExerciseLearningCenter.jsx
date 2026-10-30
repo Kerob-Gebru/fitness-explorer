@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { normalizeExerciseInstructions, normalizeExerciseMedia, normalizeExerciseValues } from '../../features/exercises/exerciseDetails.js'
 import { formatLabel } from '../../utils/formatExercise.js'
 
@@ -6,12 +6,17 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
   const [failedMedia, setFailedMedia] = useState([])
   const [loadedMedia, setLoadedMedia] = useState([])
   const [selectedMediaUrl, setSelectedMediaUrl] = useState(null)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  )
+  const [motionEnabledUrl, setMotionEnabledUrl] = useState(null)
   const [currentStep, setCurrentStep] = useState(0)
   const id = useId()
   const name = formatLabel(exercise?.name, 'Exercise')
   const media = normalizeExerciseMedia(exercise).filter((item) => !failedMedia.includes(item.url))
   const activeMedia = media.find((item) => item.url === selectedMediaUrl) ?? media[0]
   const isMediaLoaded = activeMedia ? loadedMedia.includes(activeMedia.url) : false
+  const animationRequiresOptIn = activeMedia?.type === 'gif' && prefersReducedMotion && motionEnabledUrl !== activeMedia.url
   const instructions = normalizeExerciseInstructions(exercise?.instructions)
   const currentInstruction = instructions[currentStep]
   const primaryMuscles = normalizeExerciseValues(exercise?.target)
@@ -28,6 +33,14 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
   const hasGuidance = tips.length > 0 || safety.length > 0 || mistakes.length > 0
   const hasMuscleInfo = primaryMuscles.length > 0 || secondaryMuscles.length > 0 ||
     bodyParts.length > 0 || equipment.length > 0 || category.length > 0 || difficulty.length > 0
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (!mediaQuery?.addEventListener) return undefined
+    const updatePreference = (event) => setPrefersReducedMotion(event.matches)
+    mediaQuery.addEventListener('change', updatePreference)
+    return () => mediaQuery.removeEventListener('change', updatePreference)
+  }, [])
 
   function markMediaFailed(url) {
     setFailedMedia((current) => current.includes(url) ? current : [...current, url])
@@ -67,6 +80,17 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
                       <source src={activeMedia.url} />
                       Your browser cannot play this exercise video.
                     </video>
+                  ) : animationRequiresOptIn ? (
+                    <div className="learning-center__motion-prompt">
+                      <p>This animation is paused for your reduced-motion setting.</p>
+                      <button
+                        type="button"
+                        className="btn btn--primary"
+                        onClick={() => setMotionEnabledUrl(activeMedia.url)}
+                      >
+                        Play animation
+                      </button>
+                    </div>
                   ) : (
                     <img
                       key={activeMedia.url}
@@ -78,9 +102,18 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
                       onError={() => markMediaFailed(activeMedia.url)}
                     />
                   )}
-                  {!isMediaLoaded && <span className="learning-center__loading" role="status">{activeMedia.type === 'video' ? 'Loading video…' : 'Loading demonstration…'}</span>}
+                  {!isMediaLoaded && !animationRequiresOptIn && <span className="learning-center__loading" role="status">{activeMedia.type === 'video' ? 'Loading video…' : 'Loading demonstration…'}</span>}
                 </div>
-                <figcaption>{activeMedia.type === 'video' ? 'Video demonstration · use the playback controls' : activeMedia.type === 'gif' ? 'Animated exercise demonstration' : 'Exercise reference image'}</figcaption>
+                <figcaption>
+                  {activeMedia.type === 'video' ? 'Video demonstration · use the playback controls' : activeMedia.type === 'gif' ? 'Animated exercise demonstration' : 'Exercise reference image'}
+                  {activeMedia.attribution && (
+                    <span className="learning-center__attribution">
+                      {' '}“{activeMedia.attribution.title}” by {activeMedia.attribution.creator},{' '}
+                      <a href={activeMedia.attribution.sourceUrl} target="_blank" rel="noreferrer">{activeMedia.attribution.source}</a>,
+                      {' '}<a href={activeMedia.attribution.licenseUrl} target="_blank" rel="noreferrer">{activeMedia.attribution.license}</a>. {activeMedia.attribution.changes}
+                    </span>
+                  )}
+                </figcaption>
                 {media.length > 1 && (
                   <div className="learning-center__media-picker" role="group" aria-label="Choose exercise demonstration">
                     {media.map((item) => (
@@ -91,7 +124,7 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
                         aria-pressed={activeMedia.url === item.url}
                         onClick={() => setSelectedMediaUrl(item.url)}
                       >
-                        {item.type === 'gif' ? 'GIF' : item.type === 'video' ? 'Video' : 'Image'}
+                        {item.type === 'gif' ? (item.source === 'verified-local' ? 'Verified GIF' : 'GIF') : item.type === 'video' ? 'Video' : 'Image'}
                       </button>
                     ))}
                   </div>
