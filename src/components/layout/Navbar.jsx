@@ -46,6 +46,11 @@ export default function Navbar() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/progress" className={linkClass}>
+                Progress
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/favorites" className={linkClass}>
                 Favorites
                 <span className="nav__count" aria-label={`${favoriteCount} saved`}>

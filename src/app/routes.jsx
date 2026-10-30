@@ -8,6 +8,7 @@ import NotFoundPage from '../pages/NotFoundPage.jsx'
 import WorkoutPage from '../pages/WorkoutPage.jsx'
 import WorkoutCalendarPage from '../pages/WorkoutCalendarPage.jsx'
 import WorkoutSessionPage from '../pages/WorkoutSessionPage.jsx'
+import ProgressPage from '../pages/ProgressPage.jsx'
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: 'workout', element: <WorkoutPage /> },
       { path: 'workout/session', element: <WorkoutSessionPage /> },
       { path: 'calendar', element: <WorkoutCalendarPage /> },
+      { path: 'progress', element: <ProgressPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

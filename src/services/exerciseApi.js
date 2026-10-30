@@ -2,7 +2,7 @@
 // It picks demo data or live data based on VITE_USE_MOCK_DATA (see services/config.js).
 //
 // Every function returns exercises in the same shape (see utils/formatExercise.js):
-// { id, name, bodyPart, target, equipment, secondaryMuscles, instructions, gifUrl, source }
+// { id, name, bodyPart, target, equipment, secondaryMuscles, instructions, gifUrl, imageUrl, videoUrl, source }
 import { USE_MOCK_DATA } from './config.js'
 import * as mockApi from './mockExerciseApi.js'
 import * as liveApi from './liveExerciseApi.js'

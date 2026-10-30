@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import EmptyState from '../components/common/EmptyState.jsx'
-import ExerciseImage from '../components/exercises/ExerciseImage.jsx'
+import ExerciseLearningCenter from '../components/exercises/ExerciseLearningCenter.jsx'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
-import { normalizeExerciseInstructions } from '../features/exercises/exerciseDetails.js'
 import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
 import { formatSessionDate } from '../features/workout/workoutProgress.js'
 import { formatLabel } from '../utils/formatExercise.js'
@@ -45,7 +44,6 @@ export default function WorkoutSessionPage() {
   const currentIndex = session?.currentExerciseIndex ?? 0
   const exercise = session?.exercises[currentIndex] ?? null
   const restTimer = session?.restTimer ?? null
-  const instructions = useMemo(() => normalizeExerciseInstructions(exercise?.instructions), [exercise?.instructions])
   const configuredRest = Number(exercise?.config?.rest)
   const defaultRest = Number.isFinite(configuredRest) ? Math.min(600, Math.max(0, configuredRest)) : 60
   const restDuration = restDurationOverride && restDurationOverride.exerciseId === exercise?.id
@@ -192,15 +190,7 @@ export default function WorkoutSessionPage() {
             </div>
             <Link className="btn" to={`/exercises/${exercise.id}`}>Exercise details</Link>
           </div>
-          <div className="interactive-exercise__content">
-            <ExerciseImage src={exercise.gifUrl} name={formatLabel(exercise.name)} className="interactive-exercise__image" />
-            <div className="interactive-exercise__instructions">
-              <h3>Instructions</h3>
-              {instructions.length ? (
-                <ol>{instructions.map((instruction, index) => <li key={`${index}-${instruction}`}>{instruction}</li>)}</ol>
-              ) : <p className="muted">Instructions are not available for this exercise.</p>}
-            </div>
-          </div>
+          <ExerciseLearningCenter key={exercise.id} exercise={exercise} compact />
 
           <section className="interactive-sets" aria-labelledby="set-tracking-title">
             <div className="interactive-sets__heading">

@@ -86,6 +86,16 @@ function normalizeExercise(raw) {
     const entries = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
     return entries.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim())
   }
+  const instructionList = (value) => {
+    const entries = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+    return entries.flatMap((item) => {
+      if (typeof item === 'string' && item.trim()) return [item.trim()]
+      if (!item || typeof item !== 'object') return []
+      const instruction = [item.instruction, item.text, item.description]
+        .find((text) => typeof text === 'string' && text.trim())
+      return instruction ? [instruction.trim()] : []
+    })
+  }
   const optionalText = (value) => {
     if (typeof value === 'string') return value.trim()
     if (Array.isArray(value)) return textList(value)
@@ -100,10 +110,10 @@ function normalizeExercise(raw) {
     target: raw.target ?? '',
     equipment: raw.equipment ?? '',
     secondaryMuscles: textList(raw.secondaryMuscles),
-    instructions: Array.isArray(raw.instructions)
-      ? textList(raw.instructions)
-      : typeof raw.instructions === 'string' ? raw.instructions : [],
+    instructions: instructionList(raw.instructions),
     gifUrl: typeof raw.gifUrl === 'string' && raw.gifUrl.trim() ? raw.gifUrl : null,
+    imageUrl: typeof raw.imageUrl === 'string' && raw.imageUrl.trim() ? raw.imageUrl : null,
+    videoUrl: typeof raw.videoUrl === 'string' && raw.videoUrl.trim() ? raw.videoUrl : null,
     ...(category?.length ? { category } : {}),
     ...(difficulty?.length ? { difficulty } : {}),
     ...(textList(raw.tips).length ? { tips: textList(raw.tips) } : {}),

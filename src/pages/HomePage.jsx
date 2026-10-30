@@ -13,7 +13,8 @@ import { countBy, formatLabel } from '../utils/formatExercise.js'
 import { useRecentStore } from '../features/recent/useRecentStore.js'
 import { useFavoritesStore } from '../features/favorites/useFavoritesStore.js'
 import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
-import { calculateWorkoutProgress, formatSessionDate, localDateKey } from '../features/workout/workoutProgress.js'
+import { calculateWorkoutProgress, formatSessionDate, getCompletedWorkoutSessions, localDateKey } from '../features/workout/workoutProgress.js'
+import GoalProgressPanel from '../features/workout/GoalProgressPanel.jsx'
 import { formatDateKey } from '../features/workout/workoutCalendar.js'
 
 export default function HomePage() {
@@ -31,19 +32,7 @@ export default function HomePage() {
   const activeSession = useWorkoutStore((state) => state.activeSession)
   const builderExercises = useWorkoutStore((state) => state.exercises)
   const stats = useMemo(() => calculateWorkoutProgress(history), [history])
-  const recentSessions = useMemo(() => {
-    const seen = new Set()
-    return [...history]
-      .filter((session) => {
-        if (!session || session.status !== 'completed' || typeof session.id !== 'string' ||
-          typeof session.completedAt !== 'string' || seen.has(session.id) ||
-          !Number.isFinite(Date.parse(session.completedAt))) return false
-        seen.add(session.id)
-        return true
-      })
-      .sort((first, second) => Date.parse(second.completedAt) - Date.parse(first.completedAt))
-      .slice(0, 3)
-  }, [history])
+  const recentSessions = useMemo(() => getCompletedWorkoutSessions(history).slice(0, 3), [history])
 
   const { data: exercises, loading, error, retry } = useAsyncData(() => getExercises(), [])
 
@@ -84,6 +73,7 @@ export default function HomePage() {
           <Link className="btn" to="/workout#plans">Saved plans <span className="count-pill">{plans.length}</span></Link>
           <Link className="btn" to="/workout#history">Workout history</Link>
           <Link className="btn" to="/calendar">Workout calendar</Link>
+          <Link className="btn" to="/progress">Progress analytics</Link>
           <Link className="btn" to="/workout">{nextWorkoutLabel}</Link>
         </div>
 
@@ -113,12 +103,18 @@ export default function HomePage() {
               <div><p className="muted">This week</p><strong>{stats.weeklyWorkouts}</strong></div>
             </article>
             <article className="dashboard-stat">
+              <span className="dashboard-stat__icon" aria-hidden="true">▤</span>
+              <div><p className="muted">This month</p><strong>{stats.monthlyWorkouts}</strong></div>
+            </article>
+            <article className="dashboard-stat">
               <span className="dashboard-stat__icon" aria-hidden="true">↗</span>
               <div><p className="muted">Current streak</p><strong>{stats.currentStreak}<small> {stats.currentStreak === 1 ? 'day' : 'days'}</small></strong></div>
             </article>
           </div>
 
         </section>
+
+        <GoalProgressPanel stats={stats} />
 
         <section className="dashboard-home__weekly" aria-labelledby="dashboard-weekly-title">
           <div className="dashboard-section-heading">

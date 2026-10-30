@@ -3,6 +3,16 @@ import { persist } from 'zustand/middleware'
 
 const DEFAULT_SETTINGS = { name: 'My training session', goalMinutes: 45, configs: {}, completed: [] }
 const DEFAULT_CONFIG = { sets: 3, reps: 12, rest: 60 }
+export const DEFAULT_WORKOUT_GOALS = { weekly: 3, monthly: 12 }
+const WORKOUT_GOAL_LIMITS = { weekly: 14, monthly: 60 }
+
+function sanitizeGoals(value) {
+  const goals = value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+  return Object.fromEntries(Object.entries(DEFAULT_WORKOUT_GOALS).map(([period, fallback]) => {
+    const target = goals[period]
+    return [period, Number.isInteger(target) && target >= 1 && target <= WORKOUT_GOAL_LIMITS[period] ? target : fallback]
+  }))
+}
 
 function sanitizeConfig(value) {
   const config = { ...DEFAULT_CONFIG, ...(value && typeof value === 'object' ? value : {}) }
@@ -243,11 +253,13 @@ function migrateWorkoutState(persistedState, persistedVersion) {
     }
   }
   if (persistedVersion < 4) return { ...persistedState }
+  if (persistedVersion < 5) return { ...persistedState, goals: sanitizeGoals(persistedState.goals) }
   return persistedState
 }
 
 export const useWorkoutStore = create(persist((set, get) => ({
   exercises: [],
+  goals: { ...DEFAULT_WORKOUT_GOALS },
   settings: { ...DEFAULT_SETTINGS },
   plans: [],
   history: [],
@@ -267,6 +279,17 @@ export const useWorkoutStore = create(persist((set, get) => ({
     else get().addExercise(exercise)
   },
   updateSession: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
+  updateWorkoutGoals: (updates) => set((state) => {
+    if (!updates || typeof updates !== 'object') return state
+    const goals = { ...state.goals }
+    for (const period of Object.keys(DEFAULT_WORKOUT_GOALS)) {
+      if (!(period in updates)) continue
+      const target = updates[period]
+      if (!Number.isInteger(target) || target < 1 || target > WORKOUT_GOAL_LIMITS[period]) return state
+      goals[period] = target
+    }
+    return { goals }
+  }),
   updateExerciseConfig: (id, updates) => set((state) => ({
     settings: { ...state.settings, configs: { ...state.settings.configs, [id]: { sets: 3, reps: 12, rest: 60, ...state.settings.configs[id], ...updates } } },
   })),
@@ -615,10 +638,11 @@ export const useWorkoutStore = create(persist((set, get) => ({
   deleteHistorySession: (id) => set((state) => ({ history: state.history.filter((session) => session.id !== id) })),
 }), {
   name: 'fitness-explorer-workout',
-  version: 4,
+  version: 5,
   migrate: migrateWorkoutState,
   partialize: (state) => ({
     exercises: state.exercises,
+    goals: state.goals,
     settings: state.settings,
     plans: state.plans,
     history: state.history,
@@ -628,6 +652,7 @@ export const useWorkoutStore = create(persist((set, get) => ({
   merge: (persisted, current) => ({
     ...current,
     exercises: sanitizeExercises(persisted?.exercises),
+    goals: sanitizeGoals(persisted?.goals),
     settings: sanitizeSettings(persisted?.settings),
     plans: sanitizePlans(persisted?.plans),
     history: sanitizeHistory(persisted?.history),

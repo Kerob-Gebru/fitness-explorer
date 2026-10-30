@@ -26,17 +26,18 @@ Other commands: `npm run build` (production build), `npm run preview` (serve the
 
 ## Features
 
-- Personalized home dashboard with activity summaries, calendar-week chart, recent completed workouts, saved plans, quick actions, and exercise discovery
+- Personalized home dashboard with activity summaries, weekly and monthly goal progress, calendar-week chart, recent completed workouts, saved plans, quick actions, and exercise discovery
 - Explore page with debounced name search, filters (body part, target muscle, equipment) and "Show more"
-- Exercise details page at `/exercises/:id` with demonstration media, primary and secondary muscles, equipment, numbered instructions, source-provided guidance, related exercises, and favorite/workout actions
+- Exercise details page at `/exercises/:id` with a responsive demonstration and learning center, source-provided step-by-step instructions and technique information, primary and secondary muscles, equipment, related exercises, and favorite/workout actions
 - Favorites page, saved in the browser (localStorage) and kept after refresh, no duplicates
 - Workout builder with add/remove controls, editable saved workout plans, and print-friendly layout
-- Interactive workout sessions at `/workout/session` with exercise navigation, completion/skip states, set/repetition/weight/notes tracking, an elapsed-time clock, and a controllable rest timer
+- Interactive workout sessions at `/workout/session` with exercise navigation, a shared movement guide and available demonstration media, completion/skip states, set/repetition/weight/notes tracking, an elapsed-time clock, and a controllable rest timer
 - Active session progress saved locally and recoverable after refresh; completed and early-ended sessions are retained separately, while only completed workouts count toward dashboard progress
 - Scheduled workouts launch into interactive sessions and update their calendar status on completion
 - Monthly workout calendar with persistent plan scheduling, rescheduling, cancellation, overdue status, and scheduled-session completion
-- Workout progress summary with completed workout counts, current calendar-week activity, and current/longest streaks
-- Workout plans, active session progress, scheduled workouts, and completed history share the existing `fitness-explorer-workout` localStorage key; workout data stays in this browser
+- Progress analytics at `/progress` with weekly/monthly trends, recent frequency, tracked duration/sets/reps, streak and consistency information, and history-derived milestones
+- Editable weekly and monthly completed-workout targets (defaults: 3 per Monday–Sunday week and 12 per calendar month), persisted with the existing workout store
+- Workout plans, active session progress, goals, scheduled workouts, and completed history share the existing `fitness-explorer-workout` localStorage key; workout data stays in this browser
 - Recently viewed exercises on the homepage, saved locally
 - Explore sorting by recommended order, name A–Z, name Z–A, and body part
 - Loading, error, empty-result and empty-favorites states; image fallback; friendly not-found pages
@@ -49,7 +50,7 @@ src/
   app/routes.jsx            route table
   components/               common/, layout/, exercises/ (reusable UI)
   features/                 favorites, search, recent-view and workout Zustand stores
-                            workoutProgress.js calculates history-based dashboard statistics
+                            workoutProgress.js calculates history-based dashboard and analytics statistics
   hooks/                    useDebounce, useAsyncData, useDocumentTitle
   layouts/MainLayout.jsx    navbar, footer and shared route layout
   pages/                    Home, Explore, ExerciseDetails, Favorites, Workout, WorkoutSession, WorkoutCalendar, NotFound
