@@ -81,7 +81,16 @@ test('matches verified demos by exact IDs and explicit normalized aliases only',
   assert.equal(getVerifiedExerciseDemo({ id: 'live-123', name: 'PUSH UPS' }).id, 'push-up')
   assert.equal(getVerifiedExerciseDemo({ id: 'live-124', name: 'decline push-up' }), null)
   assert.equal(getVerifiedExerciseDemo({ id: 'live-125', name: 'dumbbell push-up' }), null)
-  assert.equal(getVerifiedExerciseDemo({ id: 'other-id', name: 'jumping jack' }), null)
+  assert.equal(getVerifiedExerciseDemo({ id: 'demo-005', name: 'pull-up' }).id, 'pull-up')
+  assert.equal(getVerifiedExerciseDemo({ id: 'live-126', name: 'PULL UPS' }).id, 'pull-up')
+  assert.equal(getVerifiedExerciseDemo({ id: 'live-127', name: 'chin-up' }), null)
+  assert.equal(getVerifiedExerciseDemo({ id: 'demo-016', name: 'bodyweight lunge' }).id, 'bodyweight-lunge')
+  assert.equal(getVerifiedExerciseDemo({ id: 'live-128', name: 'walking lunge' }), null)
+  assert.equal(getVerifiedExerciseDemo({ id: 'live-129', name: 'jumping jack' }).id, 'jumping-jack')
+  assert.equal(getVerifiedExerciseDemo({ id: 'live-130', name: 'jumping jacks' }).id, 'jumping-jack')
+  assert.equal(getVerifiedExerciseDemo({ id: 'other-id', name: 'mountain climber' }), null)
+  assert.equal(getVerifiedExerciseDemo({ id: 'demo-015', name: 'barbell back squat' }), null)
+  assert.equal(getVerifiedExerciseDemo({ id: 'demo-012', name: 'dumbbell bicep curl' }), null)
 })
 
 test('normalizes optional muscle and equipment values without inventing fields', () => {

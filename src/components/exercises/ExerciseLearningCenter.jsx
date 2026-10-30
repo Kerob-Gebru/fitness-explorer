@@ -110,7 +110,9 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
                     <span className="learning-center__attribution">
                       {' '}“{activeMedia.attribution.title}” by {activeMedia.attribution.creator},{' '}
                       <a href={activeMedia.attribution.sourceUrl} target="_blank" rel="noreferrer">{activeMedia.attribution.source}</a>,
-                      {' '}<a href={activeMedia.attribution.licenseUrl} target="_blank" rel="noreferrer">{activeMedia.attribution.license}</a>. {activeMedia.attribution.changes}
+                      {' '}{activeMedia.attribution.licenseUrl
+                        ? <a href={activeMedia.attribution.licenseUrl} target="_blank" rel="noreferrer">{activeMedia.attribution.license}</a>
+                        : activeMedia.attribution.license}. {activeMedia.attribution.changes}
                     </span>
                   )}
                 </figcaption>
