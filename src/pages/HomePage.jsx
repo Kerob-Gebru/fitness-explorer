@@ -62,19 +62,23 @@ export default function HomePage() {
         <header className="dashboard-home__welcome">
           <div>
             <p className="eyebrow">YOUR FITNESS SPACE</p>
-            <h1 id="dashboard-title">Welcome back</h1>
-            <p className="muted">A clear view of your training, plans, and next steps.</p>
+            <h1 id="dashboard-title">Find your<br />stronger side.</h1>
+            <p className="muted">A little movement. A lot of momentum. Your training, ready when you are.</p>
+            <div className="dashboard-home__hero-actions">
+              <Link className="btn btn--primary" to="/explore">Explore exercises</Link>
+              <Link className="btn" to={activeSession ? '/workout/session' : '/workout'}>
+                {nextWorkoutLabel} <span aria-hidden="true">↗</span>
+              </Link>
+            </div>
           </div>
           <time className="dashboard-home__date" dateTime={localDateKey(currentDate)}>{today}</time>
         </header>
 
         <div className="dashboard-home__actions" aria-label="Quick actions">
-          <Link className="btn btn--primary" to="/explore">Explore exercises</Link>
           <Link className="btn" to="/workout#plans">Saved plans <span className="count-pill">{plans.length}</span></Link>
           <Link className="btn" to="/workout#history">Workout history</Link>
           <Link className="btn" to="/calendar">Workout calendar</Link>
           <Link className="btn" to="/progress">Progress analytics</Link>
-          <Link className="btn" to="/workout">{nextWorkoutLabel}</Link>
         </div>
 
         <section className="dashboard-home__overview" aria-labelledby="dashboard-overview-title">

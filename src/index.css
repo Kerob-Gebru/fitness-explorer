@@ -3,6 +3,7 @@
   --bg: #f1f2f4;
   --surface: #ffffff;
   --surface-2: #e7e9ed;
+  --surface-3: #f7f7f8;
   --border: #d7d9de;
   --text: #171717;
   --muted: #777777;
@@ -11,11 +12,43 @@
   --saved: #bd8a00;
   --danger: #bd3434;
   --mustard: #f2c94c;
+  --subtle: #777777;
+  --accent-hover: #254bff;
+  --accent-soft: #254bff;
+  --nav-bg: rgba(241, 242, 244, 0.94);
+  --nav-shadow: rgba(17, 18, 22, 0.08);
+  --input-placeholder: #6f7699;
+  --input-bg: #ffffff;
   --radius: 18px;
   --font-body: 'Aptos', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   --font-head: 'Arial', 'Aptos Display', system-ui, sans-serif;
   color-scheme: light;
 }
+
+html[data-theme='dark'] {
+  --bg: #10131b;
+  --surface: #191e2a;
+  --surface-2: #151a25;
+  --surface-3: #252c3b;
+  --border: #343d50;
+  --text: #e9edf5;
+  --muted: #a5aec0;
+  --subtle: #7f899e;
+  --accent: #4263ff;
+  --accent-hover: #5574ff;
+  --accent-soft: #8296ff;
+  --accent-ink: #ffffff;
+  --saved: #e8b94f;
+  --danger: #ff8d8d;
+  --mustard: #e8b94f;
+  --nav-bg: #151a25;
+  --nav-shadow: rgba(0, 0, 0, 0.4);
+  --input-placeholder: #7f899e;
+  --input-bg: #191e2a;
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] .input::placeholder { color: var(--input-placeholder); }
 
 *,
 *::before,
@@ -90,9 +123,10 @@ ul, ol { margin: 0; padding: 0; }
 /* Navigation */
 .nav {
   position: sticky; top: 0; z-index: 10;
-  background: rgba(241, 242, 244, 0.94);
+  background: var(--nav-bg);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 var(--nav-shadow);
 }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
 .nav__brand {
@@ -115,6 +149,28 @@ ul, ol { margin: 0; padding: 0; }
   background: var(--surface-2); color: var(--text);
 }
 .nav__link--active .nav__count { background: var(--accent-ink); color: var(--accent); }
+.nav__theme-switcher {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.25rem; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 999px;
+}
+.nav__theme-option {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.45rem 0.7rem; border-radius: 999px; border: 1px solid transparent;
+  background: transparent; color: var(--muted); font: inherit; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; transition: all 0.18s ease;
+}
+.nav__theme-option svg {
+  width: 0.95rem; height: 0.95rem; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; fill: none;
+}
+.nav__theme-option.is-active {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 0 0 0 1px rgba(37, 75, 255, 0.1);
+}
+.nav__theme-option:hover { color: var(--text); }
+.nav__icon { width: 16px; height: 16px; color: currentColor; display: inline-block; }
 
 .demo-banner {
   background: #2a2410; color: #ffe2a3;
@@ -142,7 +198,7 @@ ul, ol { margin: 0; padding: 0; }
   border: 1px solid var(--border); border-radius: 10px;
   font: inherit;
 }
-.input::placeholder { color: #6f7699; }
+.input::placeholder { color: var(--input-placeholder); }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   padding: 0.7rem 1.1rem; border-radius: 10px;
@@ -1094,15 +1150,26 @@ select.input { color: var(--text); }
   content: '';
 }
 .dashboard-home__welcome > * { position: relative; z-index: 1; }
+.dashboard-home__welcome > div:first-child { max-width: min(68%, 680px); }
 .dashboard-home__welcome .eyebrow { color: rgba(255, 255, 255, .76); }
 .dashboard-home__welcome h1 {
-  max-width: 10ch;
+  max-width: 12ch;
   margin-bottom: .8rem;
   font-size: clamp(3.2rem, 8vw, 6.7rem);
   letter-spacing: -.075em;
 }
 .dashboard-home__welcome .muted, .dashboard-home__date { color: rgba(255, 255, 255, .8); }
 .dashboard-home__date { align-self: start; font-size: .9rem; }
+.dashboard-home__hero-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.4rem; }
+.dashboard-home__hero-actions .btn { border-color: rgba(255, 255, 255, .52); background: transparent; color: white; }
+.dashboard-home__hero-actions .btn--primary,
+.dashboard-home__hero-actions .btn--primary:hover:not(:disabled) {
+  border-color: white;
+  background: white;
+  color: var(--accent);
+}
+.dashboard-home__hero-actions .btn:hover:not(:disabled) { border-color: white; color: white; }
+.dashboard-home__hero-actions .btn--primary:hover:not(:disabled) { color: var(--accent); }
 .dashboard-home__actions { gap: .55rem; }
 .dashboard-home__actions .btn {
   min-height: 43px;
@@ -1128,6 +1195,15 @@ select.input { color: var(--text); }
 }
 .dashboard-home__stats .dashboard-stat:nth-child(1) { border: 0; background: var(--mustard); }
 .dashboard-home__stats .dashboard-stat:nth-child(2) { border: 0; background: #eaf0ff; }
+.dashboard-home__stats .dashboard-stat strong { display: inline-block; animation: stat-arrive .55s both; }
+.dashboard-home__stats .dashboard-stat:nth-child(2) strong { animation-delay: 70ms; }
+.dashboard-home__stats .dashboard-stat:nth-child(3) strong { animation-delay: 140ms; }
+.dashboard-home__stats .dashboard-stat:nth-child(4) strong { animation-delay: 210ms; }
+.dashboard-home__stats .dashboard-stat:nth-child(5) strong { animation-delay: 280ms; }
+@keyframes stat-arrive {
+  from { opacity: .35; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .dashboard-stat__icon {
   display: grid;
   place-items: center;
@@ -1149,6 +1225,14 @@ select.input { color: var(--text); }
 .activity-chart__count { color: white; }
 .activity-chart__track { background: rgba(255, 255, 255, .15); }
 .activity-chart__track > span { background: var(--mustard); }
+.activity-chart__track > span { transform-origin: bottom; animation: bar-rise .7s both; }
+.activity-chart__day:nth-child(2) .activity-chart__track > span { animation-delay: 70ms; }
+.activity-chart__day:nth-child(3) .activity-chart__track > span { animation-delay: 140ms; }
+.activity-chart__day:nth-child(4) .activity-chart__track > span { animation-delay: 210ms; }
+.activity-chart__day:nth-child(5) .activity-chart__track > span { animation-delay: 280ms; }
+.activity-chart__day:nth-child(6) .activity-chart__track > span { animation-delay: 350ms; }
+.activity-chart__day:nth-child(7) .activity-chart__track > span { animation-delay: 420ms; }
+@keyframes bar-rise { from { transform: scaleY(.1); } to { transform: scaleY(1); } }
 .activity-chart__day { color: #c1c2c6; }
 .dashboard-home__list li { border-color: #e8e9ec; }
 .dashboard-home__view-plan { min-height: 36px; }
@@ -1249,6 +1333,34 @@ select.input { color: var(--text); }
 .rest-timer { border-top: 5px solid var(--mustard); }
 .rest-timer__time { color: var(--accent); }
 .workout-notice { border: 0; border-left: 4px solid var(--accent); border-radius: 5px; background: #e8edff; color: var(--text); }
+.workout-page > .dashboard-heading {
+  padding: clamp(1.3rem, 4vw, 2.4rem);
+  border-radius: 15px 15px 64px 15px;
+  background: var(--text);
+  color: white;
+}
+.workout-page > .dashboard-heading .eyebrow { color: var(--mustard); }
+.workout-page > .dashboard-heading .muted { color: #c1c2c6; }
+.workout-page > .dashboard-heading .btn { flex: 0 0 auto; }
+.workout-session-header {
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border-radius: 15px 15px 54px 15px;
+  background: var(--text);
+  color: white;
+}
+.workout-session-header .eyebrow { color: var(--mustard); }
+.workout-session-header .muted { color: #c1c2c6; }
+.workout-session-header .btn:not(.btn--primary) { border-color: rgba(255, 255, 255, .3); background: transparent; color: white; }
+.workout-session-header .btn--primary { border-color: var(--mustard); background: var(--mustard); color: var(--text); }
+.workout-session-header .btn--danger { border-color: rgba(255, 255, 255, .25); color: #ffb1b1; }
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .55s ease, transform .55s cubic-bezier(.2, .7, .2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-on-scroll.is-revealed { opacity: 1; transform: translateY(0); }
+.grid > .reveal-on-scroll { transition-delay: 0ms; }
 .footer { border-top: 1px solid var(--border); background: transparent; color: var(--muted); }
 .footer p { font-size: .82rem; }
 
@@ -1280,7 +1392,9 @@ select.input { color: var(--text); }
   .main { padding-block: 2rem 3.5rem; }
   .dashboard-home__welcome { min-height: 270px; }
   .dashboard-home__welcome::after { right: -40%; bottom: -26%; opacity: .9; }
+  .dashboard-home__welcome > div:first-child { max-width: min(76%, 560px); }
   .dashboard-home__date { align-self: start; }
+  .dashboard-home__lower { grid-template-columns: 1fr; }
   .dashboard-home__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .learning-center__content--split, .learning-center--compact .learning-center__content--split { grid-template-columns: 1fr; }
   .details__actions { width: 100%; }
@@ -1301,13 +1415,18 @@ select.input { color: var(--text); }
     padding: 1.5rem;
     border-bottom-right-radius: 66px;
   }
-  .dashboard-home__welcome h1 { font-size: clamp(3rem, 15vw, 4.8rem); }
+  .dashboard-home__welcome > div:first-child { max-width: 100%; }
+  .dashboard-home__welcome h1 { font-size: clamp(2.8rem, 14vw, 4.8rem); }
+  .dashboard-home__hero-actions { gap: .45rem; }
+  .dashboard-home__hero-actions .btn { flex: 1; padding-inline: .65rem; font-size: .84rem; }
+  .dashboard-home__date { align-self: end; }
   .dashboard-home__actions { grid-template-columns: 1fr 1fr; }
   .dashboard-home__actions .btn { min-height: 48px; }
   .dashboard-home__stats { gap: .5rem; }
   .dashboard-home__stats .dashboard-stat { padding: .75rem; }
   .dashboard-stat__icon { width: 32px; height: 32px; }
   .dashboard-home__list li { align-items: start; }
+  .dashboard-home__panel .dashboard-section-heading { align-items: flex-start; flex-direction: column; }
   .dashboard-home__session-meta { max-width: 7rem; }
   .filters { grid-template-columns: 1fr; }
   .search { flex-direction: column; }
@@ -1328,4 +1447,342 @@ select.input { color: var(--text); }
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
   }
+  .reveal-on-scroll { opacity: 1; transform: none; }
+}
+
+html[data-theme='dark'] {
+  accent-color: var(--accent);
+}
+
+html[data-theme='dark'] body {
+  background:
+    radial-gradient(ellipse at 92% 8%, rgba(66, 99, 255, .08), transparent 28rem),
+    var(--bg);
+}
+
+html[data-theme='dark'] a { color: var(--accent-soft); }
+html[data-theme='dark'] h1,
+html[data-theme='dark'] h2,
+html[data-theme='dark'] h3,
+html[data-theme='dark'] .card__title,
+html[data-theme='dark'] .category__name { color: var(--text); }
+
+html[data-theme='dark'] .nav {
+  background: var(--nav-bg);
+  border-bottom-color: var(--border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .22);
+}
+html[data-theme='dark'] .nav__link { color: var(--muted); }
+html[data-theme='dark'] .nav__icon { color: var(--muted); }
+html[data-theme='dark'] .nav__link:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+html[data-theme='dark'] .nav__link:hover .nav__icon { color: var(--text); }
+html[data-theme='dark'] .nav__link--active,
+html[data-theme='dark'] .nav__link--active:hover {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+html[data-theme='dark'] .nav__link--active .nav__icon { color: #ffffff; }
+html[data-theme='dark'] .nav__count {
+  background: var(--surface-3);
+  color: var(--text);
+}
+html[data-theme='dark'] .nav__link--active .nav__count {
+  background: rgba(255, 255, 255, .2);
+  color: #ffffff;
+}
+html[data-theme='dark'] .nav__theme-switcher {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html[data-theme='dark'] .nav__theme-option { color: var(--muted); }
+html[data-theme='dark'] .nav__theme-option.is-active {
+  background: var(--surface-3);
+  border-color: #46516a;
+  color: var(--text);
+  box-shadow: none;
+}
+html[data-theme='dark'] .nav__theme-option:hover { color: var(--text); }
+
+html[data-theme='dark'] .btn {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+html[data-theme='dark'] .btn:hover:not(:disabled) {
+  border-color: var(--accent-hover);
+  background: #2b3447;
+  color: var(--text);
+}
+html[data-theme='dark'] .btn--primary,
+html[data-theme='dark'] .btn--primary:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+html[data-theme='dark'] .input,
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea {
+  border-color: var(--border);
+  background-color: var(--input-bg);
+  color: var(--text);
+}
+html[data-theme='dark'] select option {
+  background: var(--surface);
+  color: var(--text);
+}
+html[data-theme='dark'] .input::placeholder,
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder { color: var(--subtle); }
+html[data-theme='dark'] input:focus,
+html[data-theme='dark'] select:focus,
+html[data-theme='dark'] textarea:focus {
+  border-color: var(--accent-soft);
+  outline-color: var(--accent-soft);
+}
+html[data-theme='dark'] .field label,
+html[data-theme='dark'] .field > span,
+html[data-theme='dark'] .sort-control,
+html[data-theme='dark'] .result-count { color: var(--muted); }
+
+html[data-theme='dark'] .category,
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .dashboard-exercise,
+html[data-theme='dark'] .plan-card,
+html[data-theme='dark'] .history-card,
+html[data-theme='dark'] .calendar-schedule,
+html[data-theme='dark'] .calendar-detail,
+html[data-theme='dark'] .calendar-upcoming,
+html[data-theme='dark'] .learning-center__steps li,
+html[data-theme='dark'] .learning-center__media-fallback {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+html[data-theme='dark'] .category:hover,
+html[data-theme='dark'] .card:hover {
+  border-color: #46516a;
+  background: var(--surface-3);
+}
+html[data-theme='dark'] .card:hover {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, .28);
+}
+html[data-theme='dark'] .chip {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+html[data-theme='dark'] .chip--accent {
+  background: rgba(66, 99, 255, .16);
+  border-color: rgba(130, 150, 255, .42);
+  color: var(--accent-soft);
+}
+html[data-theme='dark'] .exercise-image { background: var(--surface-2); }
+html[data-theme='dark'] .fav-btn {
+  border-color: var(--border);
+  background: rgba(21, 26, 37, .94);
+  color: var(--text);
+}
+html[data-theme='dark'] .fav-btn.is-active {
+  border-color: var(--saved);
+  background: rgba(232, 185, 79, .14);
+  color: var(--saved);
+}
+html[data-theme='dark'] .workout-btn {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+html[data-theme='dark'] .workout-btn:hover { border-color: var(--accent-hover); }
+html[data-theme='dark'] .workout-btn--selected {
+  border-color: rgba(130, 150, 255, .55);
+  background: rgba(66, 99, 255, .16);
+  color: var(--accent-soft);
+}
+html[data-theme='dark'] .card__feedback { background: var(--surface-3); color: var(--text); }
+
+html[data-theme='dark'] .dashboard-home__actions .btn {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+html[data-theme='dark'] .dashboard-home__actions .btn:first-child {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+html[data-theme='dark'] .dashboard-home__overview,
+html[data-theme='dark'] .dashboard-home__panel,
+html[data-theme='dark'] .progress-overview,
+html[data-theme='dark'] .active-session-section,
+html[data-theme='dark'] .plans-section,
+html[data-theme='dark'] .workout-builder,
+html[data-theme='dark'] .history-section,
+html[data-theme='dark'] .goal-panel,
+html[data-theme='dark'] .analytics-section,
+html[data-theme='dark'] .analytics-empty,
+html[data-theme='dark'] .calendar-panel,
+html[data-theme='dark'] .workout-session-progress,
+html[data-theme='dark'] .interactive-exercise,
+html[data-theme='dark'] .rest-timer,
+html[data-theme='dark'] .learning-center {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .14);
+}
+html[data-theme='dark'] .dashboard-stat,
+html[data-theme='dark'] .goal-card,
+html[data-theme='dark'] .trend-chart,
+html[data-theme='dark'] .learning-center__media,
+html[data-theme='dark'] .learning-center__guide,
+html[data-theme='dark'] .learning-center__metadata,
+html[data-theme='dark'] .learning-center__technique,
+html[data-theme='dark'] .active-set,
+html[data-theme='dark'] .interactive-set,
+html[data-theme='dark'] .calendar-day,
+html[data-theme='dark'] .calendar-schedule,
+html[data-theme='dark'] .calendar-detail,
+html[data-theme='dark'] .calendar-upcoming,
+html[data-theme='dark'] .milestone {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+html[data-theme='dark'] .dashboard-home__stats .dashboard-stat:nth-child(1),
+html[data-theme='dark'] .dashboard-home__stats .dashboard-stat:nth-child(2) {
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+html[data-theme='dark'] .dashboard-home__stats .dashboard-stat:nth-child(1) strong,
+html[data-theme='dark'] .dashboard-home__stats .dashboard-stat:nth-child(2) strong { color: var(--text); }
+html[data-theme='dark'] .dashboard-stat .muted,
+html[data-theme='dark'] .dashboard-home__list li,
+html[data-theme='dark'] .learning-center__info-group h4,
+html[data-theme='dark'] .learning-center__guidance-group h4 { color: var(--muted); }
+html[data-theme='dark'] .dashboard-home__weekly {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+html[data-theme='dark'] .dashboard-home__weekly h2,
+html[data-theme='dark'] .dashboard-home__weekly .activity-chart__count { color: var(--text); }
+html[data-theme='dark'] .dashboard-home__weekly .muted,
+html[data-theme='dark'] .activity-chart__day { color: var(--muted); }
+html[data-theme='dark'] .activity-chart__track { background: var(--surface-3); }
+html[data-theme='dark'] .activity-chart__track > span { background: var(--accent); }
+html[data-theme='dark'] .dashboard-home__list li { border-color: var(--border); }
+html[data-theme='dark'] .dashboard-home__discovery {
+  border: 1px solid rgba(232, 185, 79, .42);
+  background: rgba(232, 185, 79, .12);
+}
+html[data-theme='dark'] .dashboard-home__discovery .hero__text,
+html[data-theme='dark'] .dashboard-home__discovery .hero__link { color: var(--text); }
+
+html[data-theme='dark'] .learning-center__visual-frame { background: var(--surface-2); }
+html[data-theme='dark'] .learning-center__loading {
+  background: linear-gradient(110deg, var(--surface-2) 8%, var(--surface-3) 18%, var(--surface-2) 33%);
+  background-size: 200% 100%;
+}
+html[data-theme='dark'] .learning-center__steps li.is-current {
+  border-color: rgba(130, 150, 255, .6);
+  background: rgba(66, 99, 255, .14);
+}
+html[data-theme='dark'] .learning-center__steps li > span {
+  background: rgba(66, 99, 255, .18);
+  color: var(--accent-soft);
+}
+html[data-theme='dark'] .learning-center__viewer {
+  border-color: rgba(130, 150, 255, .45);
+  background: linear-gradient(135deg, rgba(66, 99, 255, .2), var(--surface-3));
+}
+html[data-theme='dark'] .learning-center__viewer-index { color: var(--accent-soft); }
+html[data-theme='dark'] .learning-center__media-fallback svg { color: var(--accent-soft); }
+
+html[data-theme='dark'] .goal-card--achieved {
+  border-color: rgba(232, 185, 79, .55);
+  background: rgba(232, 185, 79, .1);
+}
+html[data-theme='dark'] .goal-card__status--achieved,
+html[data-theme='dark'] .milestone--achieved .milestone__state { color: var(--saved); }
+html[data-theme='dark'] .goal-progress,
+html[data-theme='dark'] .trend-chart__track,
+html[data-theme='dark'] .workout-session-progress__track { background: var(--surface-3); }
+html[data-theme='dark'] .goal-progress > span,
+html[data-theme='dark'] .trend-chart__track > span,
+html[data-theme='dark'] .workout-session-progress__track > span { background: var(--accent); }
+html[data-theme='dark'] .milestone--achieved > span:first-child {
+  background: rgba(232, 185, 79, .18);
+  color: var(--saved);
+}
+
+html[data-theme='dark'] .calendar-grid,
+html[data-theme='dark'] .calendar-weekday,
+html[data-theme='dark'] .calendar-day { border-color: var(--border); }
+html[data-theme='dark'] .calendar-day--today,
+html[data-theme='dark'] .calendar-day--selected {
+  background: rgba(66, 99, 255, .16);
+}
+html[data-theme='dark'] .calendar-day__date { color: var(--text); }
+html[data-theme='dark'] .calendar-event--completed {
+  background: rgba(66, 99, 255, .25);
+  color: var(--accent-soft);
+}
+html[data-theme='dark'] .calendar-event--cancelled {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+html[data-theme='dark'] .calendar-today-label { color: var(--accent-soft); }
+
+html[data-theme='dark'] .active-session-section {
+  border-left: 5px solid var(--accent);
+  background: rgba(66, 99, 255, .12);
+}
+html[data-theme='dark'] .active-set--complete,
+html[data-theme='dark'] .workout-session-step.is-current {
+  border-color: var(--accent);
+  background: rgba(66, 99, 255, .18);
+  color: var(--text);
+}
+html[data-theme='dark'] .workout-session-step {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+html[data-theme='dark'] .interactive-set { border-color: var(--border); }
+html[data-theme='dark'] .workout-notice {
+  background: rgba(66, 99, 255, .14);
+  color: var(--text);
+}
+html[data-theme='dark'] .rest-timer { border-top-color: var(--saved); }
+html[data-theme='dark'] .rest-timer__time { color: var(--accent-soft); }
+html[data-theme='dark'] .workout-page > .dashboard-heading,
+html[data-theme='dark'] .workout-session-header {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+html[data-theme='dark'] .workout-page > .dashboard-heading .muted,
+html[data-theme='dark'] .workout-session-header .muted { color: var(--muted); }
+html[data-theme='dark'] .workout-session-header .btn:not(.btn--primary) {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+html[data-theme='dark'] .workout-session-header .btn--primary {
+  border-color: var(--saved);
+  background: var(--saved);
+  color: #10131b;
+}
+html[data-theme='dark'] .workout-session-header .btn--danger {
+  border-color: rgba(255, 141, 141, .4);
+  color: var(--danger);
+}
+html[data-theme='dark'] .demo-banner {
+  border-bottom-color: var(--border);
+  background: var(--surface-3);
+  color: var(--saved);
 }

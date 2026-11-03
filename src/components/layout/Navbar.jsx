@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useFavoritesStore } from '../../features/favorites/useFavoritesStore.js'
+import { useTheme } from '../../features/theme/themeContext.js'
 import { useWorkoutStore } from '../../features/workout/useWorkoutStore.js'
 
 const linkClass = ({ isActive }) => (isActive ? 'nav__link nav__link--active' : 'nav__link')
@@ -16,8 +17,42 @@ function NavIcon({ name }) {
 
   return (
     <svg className="nav__icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d={paths[name]} />
+      <path d={paths[name]} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+
+  return (
+    <div className="nav__theme-switcher" role="group" aria-label="Theme switcher">
+      <button
+        type="button"
+        className={theme === 'light' ? 'nav__theme-option is-active' : 'nav__theme-option'}
+        aria-label="Light mode"
+        aria-pressed={theme === 'light'}
+        onClick={() => setTheme('light')}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.1" />
+          <path d="M12 2.5v2.1M12 19.4v2.1M4.93 4.93l1.5 1.5M17.57 17.57l1.5 1.5M2.5 12h2.1M19.4 12h2.1M4.93 19.07l1.5-1.5M17.57 6.43l1.5-1.5" />
+        </svg>
+        <span>Light</span>
+      </button>
+      <button
+        type="button"
+        className={theme === 'dark' ? 'nav__theme-option is-active' : 'nav__theme-option'}
+        aria-label="Dark mode"
+        aria-pressed={theme === 'dark'}
+        onClick={() => setTheme('dark')}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.3A7.7 7.7 0 0 1 9.7 4a7.7 7.7 0 1 0 10.3 10.3Z" fill="currentColor" stroke="none" />
+        </svg>
+        <span>Dark</span>
+      </button>
+    </div>
   )
 }
 
@@ -79,6 +114,7 @@ export default function Navbar() {
             </li>
           </ul>
         </nav>
+        <ThemeToggle />
       </div>
     </header>
   )
