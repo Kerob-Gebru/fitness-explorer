@@ -59,7 +59,7 @@ export default function MainLayout() {
       <main id="main" className="container main">
         <Outlet />
       </main>
-      <Footer />
+      {pathname !== '/workout/session' && <Footer />}
       <ScrollRestoration />
     </>
   )
