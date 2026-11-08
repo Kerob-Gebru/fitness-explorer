@@ -1,37 +1,61 @@
-// The ONLY file that components and hooks should import for exercise data.
-// It picks demo data or live data based on VITE_USE_MOCK_DATA (see services/config.js).
-//
-// Every function returns exercises in the same shape (see utils/formatExercise.js):
-// { id, name, bodyPart, target, equipment, secondaryMuscles, instructions, gifUrl, imageUrl, videoUrl, source }
-import { USE_MOCK_DATA } from './config.js'
+
+import {
+  USE_MOCK_DATA,
+  USE_BACKEND_DATA,
+} from './config.js'
+
 import * as mockApi from './mockExerciseApi.js'
 import * as liveApi from './liveExerciseApi.js'
-import { NotFoundError } from './errors.js'
+import * as backendApi from './backendExerciseApi.js'
 
-const api = USE_MOCK_DATA ? mockApi : liveApi
+import { ApiRequestError, NotFoundError } from './errors.js'
 
-// filters: { search, bodyPart, target, equipment } (empty string means "any")
+// Select the correct data source.
+const api = USE_MOCK_DATA
+  ? mockApi
+  : USE_BACKEND_DATA
+    ? backendApi
+    : liveApi
+
+// Get exercises using the selected data source.
 export function getExercises(filters = {}) {
   return api.getExercises(filters)
 }
 
+// Always retrieve local demo exercises when explicitly requested.
 export function getLocalExercises(filters = {}) {
   return mockApi.getExercises(filters)
 }
 
-// Throws NotFoundError when the id does not exist.
+// Get one exercise by ID.
 export function getExerciseById(id) {
   const exerciseId = String(id)
+
+  // Demo exercises always come from the local demo library.
   if (exerciseId.startsWith('demo-')) {
     const localExercise = mockApi.findLocalExerciseById(exerciseId)
+
     return localExercise
       ? Promise.resolve(localExercise)
-      : Promise.reject(new NotFoundError('This sample exercise is no longer available in the local exercise library.'))
+      : Promise.reject(
+          new NotFoundError(
+            'This sample exercise is no longer available in the local exercise library.',
+          ),
+        )
   }
+
   return api.getExerciseById(id)
 }
 
-// Returns { bodyParts: string[], targets: string[], equipment: string[] }
+// Get filter options.
 export function getFilterOptions() {
   return api.getFilterOptions()
+}
+
+export function uploadExerciseImage(id, file) {
+  if (!USE_BACKEND_DATA) {
+    return Promise.reject(new ApiRequestError('Image uploads are only available when the backend data source is selected.'))
+  }
+
+  return backendApi.uploadExerciseImage(id, file)
 }

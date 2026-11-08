@@ -3,6 +3,10 @@ import { persist } from 'zustand/middleware'
 
 export const useRecentStore = create(persist((set) => ({
   exercises: [],
+  updateExerciseImage: (exerciseId, gifUrl) => set((state) => ({
+    exercises: state.exercises.map((item) =>
+      String(item.id) === String(exerciseId) ? { ...item, gifUrl } : item),
+  })),
   rememberExercise: (exercise) => set((state) => ({
     exercises: [exercise, ...state.exercises.filter((item) => String(item.id) !== String(exercise.id))].slice(0, 6),
   })),

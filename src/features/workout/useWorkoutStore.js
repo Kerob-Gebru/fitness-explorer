@@ -180,6 +180,11 @@ function snapshotExercises(exercises, configs = {}) {
   }))
 }
 
+function updateExerciseImageInList(exercises, exerciseId, gifUrl) {
+  return exercises.map((exercise) =>
+    String(exercise.id) === String(exerciseId) ? { ...exercise, gifUrl } : exercise)
+}
+
 function sanitizePlans(value) {
   if (!Array.isArray(value)) return []
   const seen = new Set()
@@ -269,6 +274,27 @@ export const useWorkoutStore = create(persist((set, get) => ({
     if (get().exercises.some((item) => String(item.id) === String(exercise.id))) return
     set((state) => ({ exercises: [...state.exercises, exercise] }))
   },
+  updateExerciseImage: (exerciseId, gifUrl) => set((state) => ({
+    exercises: updateExerciseImageInList(state.exercises, exerciseId, gifUrl),
+    plans: state.plans.map((plan) => ({
+      ...plan,
+      exercises: updateExerciseImageInList(plan.exercises, exerciseId, gifUrl),
+    })),
+    scheduledWorkouts: state.scheduledWorkouts.map((workout) => ({
+      ...workout,
+      exercises: updateExerciseImageInList(workout.exercises, exerciseId, gifUrl),
+    })),
+    history: state.history.map((session) => ({
+      ...session,
+      exercises: updateExerciseImageInList(session.exercises, exerciseId, gifUrl),
+    })),
+    activeSession: state.activeSession
+      ? {
+        ...state.activeSession,
+        exercises: updateExerciseImageInList(state.activeSession.exercises, exerciseId, gifUrl),
+      }
+      : null,
+  })),
   removeExercise: (id) => set((state) => ({
     exercises: state.exercises.filter((item) => String(item.id) !== String(id)),
     settings: { ...state.settings, completed: state.settings.completed.filter((itemId) => String(itemId) !== String(id)) },

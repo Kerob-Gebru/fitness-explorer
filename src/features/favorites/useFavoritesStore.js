@@ -29,6 +29,11 @@ export const useFavoritesStore = create(
       removeFavorite: (exerciseId) =>
         set({ favorites: get().favorites.filter((item) => String(item.id) !== String(exerciseId)) }),
 
+      updateExerciseImage: (exerciseId, gifUrl) => set((state) => ({
+        favorites: state.favorites.map((item) =>
+          String(item.id) === String(exerciseId) ? { ...item, gifUrl } : item),
+      })),
+
       toggleFavorite: (exercise) => {
         const { favorites, addFavorite, removeFavorite } = get()
         const exists = favorites.some((item) => String(item.id) === String(exercise.id))

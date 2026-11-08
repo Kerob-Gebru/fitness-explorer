@@ -11,6 +11,7 @@
   --accent-ink: #ffffff;
   --saved: #bd8a00;
   --danger: #bd3434;
+  --success: #187347;
   --mustard: #f2c94c;
   --subtle: #777777;
   --accent-hover: #254bff;
@@ -40,6 +41,7 @@ html[data-theme='dark'] {
   --accent-ink: #ffffff;
   --saved: #e8b94f;
   --danger: #ff8d8d;
+  --success: #75d6a5;
   --mustard: #e8b94f;
   --nav-bg: #151a25;
   --nav-shadow: rgba(0, 0, 0, 0.4);
@@ -1785,6 +1787,63 @@ html[data-theme='dark'] .demo-banner {
   border-bottom-color: var(--border);
   background: var(--surface-3);
   color: var(--saved);
+}
+
+.exercise-image-upload {
+  display: grid;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: clamp(1rem, 2.5vw, 1.4rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.exercise-image-upload__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.exercise-image-upload__heading .eyebrow { margin-bottom: .35rem; }
+.exercise-image-upload__heading h2 { margin: 0 0 .35rem; font-size: 1.2rem; }
+.exercise-image-upload__heading .muted { margin: 0; font-size: .88rem; }
+.exercise-image-upload__heading > div { min-width: 0; }
+.exercise-image-upload__selection {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.exercise-image-upload__preview {
+  display: block;
+  width: 112px;
+  height: 84px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  object-fit: cover;
+}
+.exercise-image-upload__file {
+  display: grid;
+  gap: .3rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.exercise-image-upload__file strong { font-size: .92rem; }
+.exercise-image-upload__file .muted { margin: 0; font-size: .82rem; }
+.exercise-image-upload__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.exercise-image-upload__message { margin: 0; font-size: .9rem; font-weight: 650; }
+.exercise-image-upload__message--error { color: var(--danger); }
+.exercise-image-upload__message--success { color: var(--success); }
+@media (max-width: 560px) {
+  .exercise-image-upload__heading { align-items: flex-start; flex-direction: column; }
+  .exercise-image-upload__heading > .btn { width: 100%; }
+  .exercise-image-upload__selection { grid-template-columns: 84px minmax(0, 1fr); gap: .75rem; }
+  .exercise-image-upload__preview { width: 84px; height: 74px; }
+  .exercise-image-upload__actions { grid-column: 1 / -1; }
+  .exercise-image-upload__actions .btn { flex: 1; }
 }
 
 /* Cinematic site footer */

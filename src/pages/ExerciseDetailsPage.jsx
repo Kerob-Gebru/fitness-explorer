@@ -3,8 +3,9 @@ import ExerciseLearningCenter from '../components/exercises/ExerciseLearningCent
 import FavoriteButton from '../components/exercises/FavoriteButton.jsx'
 import WorkoutButton from '../components/exercises/WorkoutButton.jsx'
 import RelatedExercises from '../components/exercises/RelatedExercises.jsx'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRecentStore } from '../features/recent/useRecentStore.js'
+import ExerciseImageUpload from '../components/exercises/ExerciseImageUpload.jsx'
 import Loader from '../components/common/Loader.jsx'
 import ErrorMessage from '../components/common/ErrorMessage.jsx'
 import NotFoundPage from './NotFoundPage.jsx'
@@ -15,6 +16,7 @@ import { formatLabel } from '../utils/formatExercise.js'
 
 export default function ExerciseDetailsPage() {
   const { id } = useParams()
+  const [uploadedImage, setUploadedImage] = useState(null)
   const { data: exercise, loading, error, retry } = useAsyncData(() => getExerciseById(id), [id])
   useDocumentTitle(exercise ? formatLabel(exercise.name) : 'Exercise')
   const rememberExercise = useRecentStore((state) => state.rememberExercise)
@@ -34,6 +36,9 @@ export default function ExerciseDetailsPage() {
   }
   if (error) return <ErrorMessage error={error} onRetry={retry} />
   if (!exercise) return null
+
+  const currentImage = uploadedImage?.exerciseId === String(exercise.id) ? uploadedImage.url : exercise.gifUrl
+  const displayExercise = currentImage === exercise.gifUrl ? exercise : { ...exercise, gifUrl: currentImage }
 
   return (
     <article className="exercise-details">
@@ -55,7 +60,14 @@ export default function ExerciseDetailsPage() {
         </div>
       </header>
 
-      <ExerciseLearningCenter key={exercise.id} exercise={exercise} />
+      {exercise.source === 'backend' && (
+        <ExerciseImageUpload
+          exerciseId={exercise.id}
+          onImageUploaded={(url) => setUploadedImage({ exerciseId: String(exercise.id), url })}
+        />
+      )}
+
+      <ExerciseLearningCenter key={exercise.id} exercise={displayExercise} />
 
       <RelatedExercises exercise={exercise} />
     </article>
