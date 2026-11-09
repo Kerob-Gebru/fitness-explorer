@@ -1,12 +1,17 @@
+// This module is the data-access layer between controllers and the Exercise
+// model. It contains database queries and keeps SQL/Sequelize details out of
+// the HTTP request-handling code.
 import { Op } from "sequelize";
 import Exercise from "./Exercise.js";
 
-// Keep the API's filter behavior in one place so list and count queries use
-// exactly the same conditions.
+// Build one reusable Sequelize `where` object from optional API filters.
+// Op.and makes every supplied category/search condition apply together, while
+// Op.or lets a search term match any of the displayed text columns.
 function buildExerciseFilters(filters = {}) {
   const conditions = [];
 
   if (filters.body_part) {
+    // Exact match for this category when the client supplies it.
     conditions.push({ body_part: filters.body_part });
   }
 
@@ -18,8 +23,8 @@ function buildExerciseFilters(filters = {}) {
     conditions.push({ equipment: filters.equipment });
   }
 
-  // Op.or searches each visible exercise field. Op.like retains the previous
-  // SQL LIKE behavior, including the use of % as a wildcard.
+  // Op.like performs a substring-style SQL LIKE search; the surrounding %
+  // wildcards allow matching text before and after the entered phrase.
   if (filters.search) {
     const searchValue = `%${filters.search}%`;
     conditions.push({
@@ -35,7 +40,8 @@ function buildExerciseFilters(filters = {}) {
   return conditions.length ? { [Op.and]: conditions } : {};
 }
 
-// Parse pagination inputs and keep the values within the API's safe range.
+// Convert query-string pagination values to numbers and constrain them:
+// pages start at 1, and clients can request at most 100 records per page.
 function getSafePagination(page, limit) {
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
   const safeLimit = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
@@ -47,7 +53,9 @@ function getSafePagination(page, limit) {
   };
 }
 
-// Get matching exercises in a predictable order and return only one page.
+// Fetch one page of matching rows. The controller passes query parameters here;
+// this function validates sort settings, builds filters, then asks Sequelize
+// for the ordered subset rather than loading the whole table into memory.
 export async function getAllExercises(options = {}) {
   const {
     page = 1,
@@ -68,6 +76,8 @@ export async function getAllExercises(options = {}) {
     "equipment",
     "created_at",
   ];
+  // Accept only known column names and the two supported sort directions.
+  // This prevents arbitrary sort values from being passed into the query.
   const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : "id";
   const safeOrder = String(order).toUpperCase() === "ASC" ? "ASC" : "DESC";
   const pagination = getSafePagination(page, limit);
@@ -78,6 +88,8 @@ export async function getAllExercises(options = {}) {
     search,
   });
 
+  // findAll returns every row matching `where`, limited to this page. `order`
+  // controls stable presentation, and limit/offset implement pagination.
   return Exercise.findAll({
     where,
     order: [[safeSortBy, safeOrder]],
@@ -86,17 +98,19 @@ export async function getAllExercises(options = {}) {
   });
 }
 
-// Count records using the same filters as the list query for pagination data.
+// Count the matching rows separately so the controller can calculate total
+// pages. Reusing the same filter builder keeps counts consistent with results.
 export async function countExercises(filters = {}) {
   return Exercise.count({ where: buildExerciseFilters(filters) });
 }
 
-// Retrieve one row by its primary key; Sequelize returns null when missing.
+// Find a row by its primary key. Sequelize returns null if the ID does not exist.
 export async function getExerciseById(id) {
   return Exercise.findByPk(id);
 }
 
-// Insert a new exercise and return its generated auto-increment primary key.
+// Insert a row with create(), translating absent optional values to null to
+// match the API's established behavior. Return the database-generated ID.
 export async function createExercise(exercise) {
   const createdExercise = await Exercise.create({
     external_id: exercise.external_id || null,
@@ -111,8 +125,9 @@ export async function createExercise(exercise) {
   return createdExercise.id;
 }
 
-// Replace the editable fields as the previous PUT implementation did.
-// Omitted or empty optional fields are stored as null rather than retained.
+// Replace the editable fields as a PUT operation. Sequelize's update() returns
+// an array whose first item is the number of rows affected; omitted or empty
+// optional values become null rather than keeping the previous values.
 export async function updateExercise(id, exercise) {
   const [affectedRows] = await Exercise.update(
     {
@@ -130,7 +145,8 @@ export async function updateExercise(id, exercise) {
   return affectedRows;
 }
 
-// Delete by primary key and return the number of rows removed.
+// Delete matching row(s) and return the affected-row count so the controller
+// can distinguish a successful deletion from an ID that was not found.
 export async function deleteExercise(id) {
   return Exercise.destroy({ where: { id } });
 }
