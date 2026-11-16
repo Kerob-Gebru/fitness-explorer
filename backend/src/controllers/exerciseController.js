@@ -1,15 +1,69 @@
 
 // Controllers form the HTTP-facing layer: they read Express request data,
-// validate it, call the data-access functions, and choose status/JSON responses.
-// The imported functions keep database operations in the model layer.
-import {
-  getAllExercises,
-  getExerciseById,
-  createExercise,
-  updateExercise,
-  deleteExercise,
-  countExercises,
-} from "../models/exerciseModel.js";
+// validate it, call Sequelize model methods directly, and choose status/JSON
+// responses.
+import { Op } from "sequelize";
+import Exercise from "../models/Exercise.js";
+
+// Build one reusable Sequelize `where` object from optional API filters.
+// Op.and makes every supplied category/search condition apply together, while
+// Op.or lets a search term match any of the displayed text columns.
+function buildExerciseFilters(filters = {}) {
+  const conditions = [];
+
+  if (filters.body_part) {
+    // Exact match for this category when the client supplies it.
+    conditions.push({ body_part: filters.body_part });
+  }
+
+  if (filters.target_muscle) {
+    conditions.push({ target_muscle: filters.target_muscle });
+  }
+
+  if (filters.equipment) {
+    conditions.push({ equipment: filters.equipment });
+  }
+
+  // Op.like performs a substring-style SQL LIKE search; the surrounding %
+  // wildcards allow matching text before and after the entered phrase.
+  if (filters.search) {
+    const searchValue = `%${filters.search}%`;
+    conditions.push({
+      [Op.or]: [
+        { name: { [Op.like]: searchValue } },
+        { body_part: { [Op.like]: searchValue } },
+        { target_muscle: { [Op.like]: searchValue } },
+        { equipment: { [Op.like]: searchValue } },
+      ],
+    });
+  }
+
+  return conditions.length ? { [Op.and]: conditions } : {};
+}
+
+// Convert query-string pagination values to numbers and constrain them:
+// pages start at 1, and clients can request at most 100 records per page.
+function getSafePagination(page, limit) {
+  const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
+  const safeLimit = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
+
+  return {
+    page: safePage,
+    limit: safeLimit,
+    offset: (safePage - 1) * safeLimit,
+  };
+}
+
+// Accept only known column names and the two supported sort directions.
+// This prevents arbitrary sort values from being passed into the query.
+const allowedSortColumns = [
+  "id",
+  "name",
+  "body_part",
+  "target_muscle",
+  "equipment",
+  "created_at",
+];
 
 // A duplicate external_id can be reported by Sequelize or directly by the
 // MySQL driver. Treat either form alike so create/update return HTTP 409.
@@ -18,7 +72,7 @@ function isDuplicateExternalIdError(error) {
     error?.code === "ER_DUP_ENTRY";
 }
 
-// GET /api/exercises: pass query-string options to the model layer, then return
+// GET /api/exercises: build the filters and pagination options, then return
 // the current page and matching-row count together with pagination metadata.
 export async function getExercises(req, res) {
   try {
@@ -40,41 +94,35 @@ export async function getExercises(req, res) {
       search,
     };
 
-    // Fetch the page and total count independently: the first returns the rows
-    // for this page, while the second determines how many pages exist overall.
-    const exercises = await getAllExercises({
-      page,
-      limit,
-      sortBy,
-      order,
-      ...filters,
+    const where = buildExerciseFilters(filters);
+    const pagination = getSafePagination(page, limit);
+    const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : "id";
+    const safeOrder = String(order).toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    // findAll returns the rows for this page; count returns the matching total
+    // used to calculate how many pages exist overall.
+    const exercises = await Exercise.findAll({
+      where,
+      order: [[safeSortBy, safeOrder]],
+      limit: pagination.limit,
+      offset: pagination.offset,
     });
 
-    const totalExercises = await countExercises(filters);
+    const totalExercises = await Exercise.count({ where });
 
-    const currentPage = Math.max(
-      1,
-      Number.parseInt(page, 10) || 1
-    );
-
-    const pageLimit = Math.min(
-      100,
-      Math.max(1, Number.parseInt(limit, 10) || 10)
-    );
-
-    const totalPages = Math.ceil(totalExercises / pageLimit);
+    const totalPages = Math.ceil(totalExercises / pagination.limit);
 
     // 200 means the request succeeded. The response shape includes both data
     // and navigation details used by the client to render paginated results.
     res.status(200).json({
       success: true,
       pagination: {
-        currentPage,
-        limit: pageLimit,
+        currentPage: pagination.page,
+        limit: pagination.limit,
         totalExercises,
         totalPages,
-        hasNextPage: currentPage < totalPages,
-        hasPreviousPage: currentPage > 1,
+        hasNextPage: pagination.page < totalPages,
+        hasPreviousPage: pagination.page > 1,
       },
       count: exercises.length,
       data: exercises,
@@ -103,7 +151,7 @@ export async function getExercise(req, res) {
       });
     }
 
-    const exercise = await getExerciseById(id);
+    const exercise = await Exercise.findByPk(id);
 
     if (!exercise) {
       // A valid ID can still refer to no row, which is a 404 rather than 500.
@@ -128,7 +176,7 @@ export async function getExercise(req, res) {
 }
 
 // POST /api/exercises: validate the required name, build the data object, and
-// pass it to the model layer. The created row ID is returned with HTTP 201.
+// create the row. The created row ID is returned with HTTP 201.
 export async function addExercise(req, res) {
   try {
     const {
@@ -159,14 +207,23 @@ export async function addExercise(req, res) {
       gif_url,
     };
 
-    // Trim the required name before persistence; optional fields pass through.
-    const newExerciseId = await createExercise(exercise);
+    // Trim the required name before persistence; absent optional values become
+    // null to match the API's established behavior.
+    const createdExercise = await Exercise.create({
+      external_id: external_id || null,
+      name: exercise.name,
+      body_part: body_part || null,
+      target_muscle: target_muscle || null,
+      equipment: equipment || null,
+      instructions: instructions || null,
+      gif_url: gif_url || null,
+    });
 
     res.status(201).json({
       success: true,
       message: "Exercise created successfully.",
       data: {
-        id: newExerciseId,
+        id: createdExercise.id,
         ...exercise,
       },
     });
@@ -189,7 +246,7 @@ export async function addExercise(req, res) {
 }
 
 // PUT /api/exercises/:id: validate the ID and required name, then replace the
-// editable fields. The model's affected-row count tells us whether it existed.
+// editable fields. The affected-row count tells us whether it existed.
 export async function editExercise(req, res) {
   try {
     const id = Number(req.params.id);
@@ -218,15 +275,20 @@ export async function editExercise(req, res) {
       });
     }
 
-    const affectedRows = await updateExercise(id, {
-      external_id,
-      name: name.trim(),
-      body_part,
-      target_muscle,
-      equipment,
-      instructions,
-      gif_url,
-    });
+    // Omitted or empty optional values become null rather than keeping the
+    // previous values, preserving the established PUT semantics.
+    const [affectedRows] = await Exercise.update(
+      {
+        external_id: external_id || null,
+        name: name.trim(),
+        body_part: body_part || null,
+        target_muscle: target_muscle || null,
+        equipment: equipment || null,
+        instructions: instructions || null,
+        gif_url: gif_url || null,
+      },
+      { where: { id } }
+    );
 
     if (affectedRows === 0) {
       // No rows changed means there was no matching exercise to update.
@@ -271,7 +333,7 @@ export async function removeExercise(req, res) {
       });
     }
 
-    const affectedRows = await deleteExercise(id);
+    const affectedRows = await Exercise.destroy({ where: { id } });
 
     if (affectedRows === 0) {
       return res.status(404).json({

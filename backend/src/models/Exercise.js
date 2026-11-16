@@ -65,3 +65,9 @@ const Exercise = sequelize.define(
 );
 
 export default Exercise;
+// sequilizer cli commands
+// npx sequelize-cli model:generate --name Exercise --attributes name:string,body_part:string,target_muscle:string,equipment:string,instructions:text,gif_url:string
+// npx sequelize-cli db:migrate
+// npx sequelize-cli db:undo:migration
+// npx sequelize-cli db:seed:all
+// npx sequelize-cli db:seed:undo:all

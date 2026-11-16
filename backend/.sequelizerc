@@ -1,0 +1,20 @@
+const path = require("node:path");
+
+const forbiddenOverrides = ["--url", "--config"];
+if (
+  process.argv.slice(2).some((argument) =>
+    forbiddenOverrides.some(
+      (option) => argument === option || argument.startsWith(`${option}=`)
+    )
+  )
+) {
+  throw new Error(
+    "Database URL and config overrides are disabled; use the guarded test configuration."
+  );
+}
+
+module.exports = {
+  config: path.resolve(__dirname, "sequelize-cli.config.cjs"),
+  "migrations-path": path.resolve(__dirname, "migrations"),
+  "seeders-path": path.resolve(__dirname, "seeders"),
+};

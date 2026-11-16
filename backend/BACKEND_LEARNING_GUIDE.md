@@ -15,7 +15,6 @@ React page or component
   -> Express middleware in backend/src/server.js
   -> backend/src/routes/exerciseRoutes.js
   -> backend/src/controllers/exerciseController.js
-  -> backend/src/models/exerciseModel.js
   -> backend/src/models/Exercise.js
   -> Sequelize instance in backend/src/config/db.js
   -> MariaDB
@@ -38,8 +37,7 @@ relative URL in `exercises.gif_url`. Express later serves that file through the
 | `backend/src/server.js` | Express setup, middleware order, routes, static uploads, errors, and startup. |
 | `backend/src/config/db.js` | Shared Sequelize instance and database authentication check. |
 | `backend/src/models/Exercise.js` | Sequelize definition for the existing `exercises` table. |
-| `backend/src/models/exerciseModel.js` | Reusable list, count, read, create, update, and delete operations. |
-| `backend/src/controllers/exerciseController.js` | HTTP validation and response formatting for exercise endpoints. |
+| `backend/src/controllers/exerciseController.js` | HTTP validation, response formatting, and database queries for exercise endpoints. |
 | `backend/src/controllers/uploadController.js` | Connects a stored image file to an exercise record. |
 | `backend/src/middleware/uploadMiddleware.js` | Multer disk storage, file type checks, and upload limits. |
 | `backend/src/routes/exerciseRoutes.js` | Maps URLs and methods to controller functions. |
@@ -111,8 +109,8 @@ not rewrite the table.
 ## 6. CRUD operations
 
 The route file maps HTTP requests to `exerciseController.js`. That controller
-validates inputs and builds response envelopes. The controller calls
-`exerciseModel.js`, which delegates to `Exercise` model methods.
+validates inputs, builds response envelopes, and calls `Exercise` model methods
+directly.
 
 | Operation | Model method | Result |
 |---|---|---|

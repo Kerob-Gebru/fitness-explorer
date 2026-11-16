@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './app/routes.jsx'
 import { ThemeContext } from './features/theme/themeContext.js'
@@ -9,13 +9,13 @@ const getPreferredTheme = () => {
     return savedTheme
   }
 
-  return 'light'
+  return 'dark'
 }
 
 function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(getPreferredTheme)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.style.colorScheme = theme
     localStorage.setItem('fitness-theme', theme)

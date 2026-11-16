@@ -6,7 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "db:migrate": "sequelize-cli db:migrate --env test",
+    "db:migrate:status": "sequelize-cli db:migrate:status --env test",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo --env test",
+    "db:migration:create": "sequelize-cli migration:generate --env test",
+    "db:seed:all": "sequelize-cli db:seed:all --env test",
+    "db:seed:undo": "sequelize-cli db:seed:undo --env test"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +28,7 @@
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "sequelize-cli": "^6.6.5"
   }
 }
