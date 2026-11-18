@@ -1,6 +1,5 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useFavoritesStore } from '../../features/favorites/useFavoritesStore.js'
-import { useTheme } from '../../features/theme/themeContext.js'
 import { useWorkoutStore } from '../../features/workout/useWorkoutStore.js'
 
 const linkClass = ({ isActive }) => (
@@ -21,40 +20,6 @@ function SidebarIcon({ name }) {
     <svg className="app-sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d={paths[name]} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  )
-}
-
-function SidebarThemeToggle() {
-  const { theme, setTheme } = useTheme()
-
-  return (
-    <div className="app-sidebar-theme" role="group" aria-label="Theme switcher">
-      <button
-        type="button"
-        className={theme === 'light' ? 'app-sidebar-theme-option is-active' : 'app-sidebar-theme-option'}
-        aria-label="Light mode"
-        aria-pressed={theme === 'light'}
-        onClick={() => setTheme('light')}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.1" />
-          <path d="M12 2.5v2.1M12 19.4v2.1M4.93 4.93l1.5 1.5M17.57 17.57l1.5 1.5M2.5 12h2.1M19.4 12h2.1M4.93 19.07l1.5-1.5M17.57 6.43l1.5-1.5" />
-        </svg>
-        <span className="app-sidebar-theme-label">Light</span>
-      </button>
-      <button
-        type="button"
-        className={theme === 'dark' ? 'app-sidebar-theme-option is-active' : 'app-sidebar-theme-option'}
-        aria-label="Dark mode"
-        aria-pressed={theme === 'dark'}
-        onClick={() => setTheme('dark')}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20 14.3A7.7 7.7 0 0 1 9.7 4a7.7 7.7 0 1 0 10.3 10.3Z" fill="currentColor" stroke="none" />
-        </svg>
-        <span className="app-sidebar-theme-label">Dark</span>
-      </button>
-    </div>
   )
 }
 
@@ -119,10 +84,6 @@ export default function AppSidebar() {
           </li>
         </ul>
       </nav>
-
-      <div className="app-sidebar-footer">
-        <SidebarThemeToggle />
-      </div>
     </aside>
   )
 }

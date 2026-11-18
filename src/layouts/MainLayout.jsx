@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 import AppSidebar from '../components/layout/AppSidebar.jsx'
 import Footer from '../components/layout/Footer.jsx'
+import { useTheme } from '../features/theme/themeContext.js'
 
 function getPageTitle(pathname) {
   if (pathname === '/') return 'Dashboard'
@@ -13,6 +14,40 @@ function getPageTitle(pathname) {
   if (pathname.startsWith('/calendar')) return 'Calendar'
   if (pathname.startsWith('/progress')) return 'Progress'
   return 'Fitness Explorer'
+}
+
+function HeaderThemeToggle() {
+  const { theme, setTheme } = useTheme()
+
+  return (
+    <div className="app-header__theme" role="group" aria-label="Theme switcher">
+      <button
+        type="button"
+        className={theme === 'light' ? 'app-header__theme-option is-active' : 'app-header__theme-option'}
+        aria-label="Light mode"
+        aria-pressed={theme === 'light'}
+        onClick={() => setTheme('light')}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.1" />
+          <path d="M12 2.5v2.1M12 19.4v2.1M4.93 4.93l1.5 1.5M17.57 17.57l1.5 1.5M2.5 12h2.1M19.4 12h2.1M4.93 19.07l1.5-1.5M17.57 6.43l1.5-1.5" />
+        </svg>
+        <span className="app-header__theme-label">Light</span>
+      </button>
+      <button
+        type="button"
+        className={theme === 'dark' ? 'app-header__theme-option is-active' : 'app-header__theme-option'}
+        aria-label="Dark mode"
+        aria-pressed={theme === 'dark'}
+        onClick={() => setTheme('dark')}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.3A7.7 7.7 0 0 1 9.7 4a7.7 7.7 0 1 0 10.3 10.3Z" fill="currentColor" stroke="none" />
+        </svg>
+        <span className="app-header__theme-label">Dark</span>
+      </button>
+    </div>
+  )
 }
 
 export default function MainLayout() {
@@ -89,16 +124,6 @@ export default function MainLayout() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isMenuOpen])
 
-  useEffect(() => {
-    const desktopQuery = window.matchMedia('(min-width: 761px)')
-    const handleViewportChange = (event) => {
-      if (event.matches) setIsMenuOpen(false)
-    }
-
-    desktopQuery.addEventListener('change', handleViewportChange)
-    return () => desktopQuery.removeEventListener('change', handleViewportChange)
-  }, [])
-
   useLayoutEffect(() => {
     const sidebar = shellRef.current?.querySelector('.app-sidebar')
     if (!sidebar) return
@@ -157,6 +182,7 @@ export default function MainLayout() {
               </button>
               <p className="app-header__title">{getPageTitle(pathname)}</p>
               <span className="app-header__brand">Fitness Explorer</span>
+              <HeaderThemeToggle />
             </div>
           </header>
           <main id="main" className="container main">

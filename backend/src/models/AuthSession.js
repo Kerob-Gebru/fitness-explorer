@@ -43,6 +43,21 @@ const AuthSession = sequelize.define(
       type: DataTypes.DATE(3),
       allowNull: true,
     },
+    // Groups rotated refresh tokens so reuse can revoke the whole family.
+    // Existing rows were backfilled by the migration; new sessions must supply
+    // a value from the application because the column has no database default.
+    token_family_id: {
+      type: DataTypes.CHAR(36),
+      allowNull: false,
+    },
+    // The session that superseded this one after rotation; null while current.
+    replaced_by_session_id: {
+      type: DataTypes.CHAR(36),
+      allowNull: true,
+      references: { model: "auth_sessions", key: "id" },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
     created_at: {
       type: DataTypes.DATE(3),
       allowNull: false,
@@ -61,7 +76,7 @@ const AuthSession = sequelize.define(
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
-    // Match the unique token index and the user/expiry lookup index.
+    // Match the token, lookup, rotation-family, and replacement indexes.
     indexes: [
       {
         name: "auth_sessions_refresh_token_unique",
@@ -71,6 +86,14 @@ const AuthSession = sequelize.define(
       {
         name: "auth_sessions_user_expiry",
         fields: ["user_id", "expires_at"],
+      },
+      {
+        name: "auth_sessions_user_family_revoked",
+        fields: ["user_id", "token_family_id", "revoked_at"],
+      },
+      {
+        name: "auth_sessions_replaced_by_session",
+        fields: ["replaced_by_session_id"],
       },
     ],
   }

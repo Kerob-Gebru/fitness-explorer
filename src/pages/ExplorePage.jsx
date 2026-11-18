@@ -78,7 +78,7 @@ export default function ExplorePage() {
   )
 
   return (
-    <>
+    <div className="explore-page">
       <div className="page-heading">
         <div>
           <p className="eyebrow">EXERCISE LIBRARY</p>
@@ -135,6 +135,6 @@ export default function ExplorePage() {
           onReset={resetFilters}
         />
       )}
-    </>
+    </div>
   )
 }
