@@ -24,6 +24,19 @@
   --transition-base: 200ms ease;
   --transition-slow: 300ms ease;
   --button-disabled-opacity: 0.45;
+
+  /* Depth system (Phase 0): shared geometry and motion. Theme-specific
+     shadow values live beside each palette so both themes resolve their own. */
+  --elevation-0: none;
+  --tilt-max: 6deg;
+  --tilt-perspective: 900px;
+  --press-depth: 1px;
+  --depth-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  /* --transition-fast already carries "ease"; pairing it with --depth-ease
+     would put two timing functions in one transition and invalidate the list. */
+  --depth-transition: transform 150ms var(--depth-ease),
+    box-shadow 150ms var(--depth-ease),
+    border-color 150ms var(--depth-ease);
 }
 
 /* Dark theme (default) */
@@ -98,6 +111,19 @@ html[data-theme='dark'] {
   --focus-ring-offset: 2px;
   --focus-outline: var(--focus-ring-width) solid var(--color-focus-ring);
 
+  /* Depth (dark): orange key light over a cool slate fill, with pure-black
+     contact shadows so no extra hue competes with the accent. */
+  --elevation-1: inset 0 1px 0 var(--bevel-highlight-color),
+    0 1px 2px rgba(0, 0, 0, 0.22), 0 6px 16px rgba(0, 0, 0, 0.16);
+  --elevation-2: inset 0 1px 0 var(--bevel-highlight-color),
+    0 2px 4px rgba(0, 0, 0, 0.26), 0 12px 28px rgba(0, 0, 0, 0.24);
+  --elevation-3: inset 0 1px 0 var(--bevel-highlight-color),
+    0 4px 8px rgba(0, 0, 0, 0.3), 0 20px 44px rgba(0, 0, 0, 0.34);
+  --bevel-highlight-color: rgba(255, 255, 255, 0.07);
+  --ambient-key: rgba(255, 95, 0, 0.16);
+  --ambient-fill: rgba(139, 149, 161, 0.1);
+  --ambient-shadow: rgba(0, 0, 0, 0.34);
+
   /* Compatibility aliases for the existing index.css variables */
   --bg: var(--color-bg);
   --surface: var(--color-surface);
@@ -157,4 +183,17 @@ html[data-theme='light'] {
   --status-in-progress-bg: rgba(255, 95, 0, 0.14);
   --status-completed-bg: rgba(37, 139, 99, 0.12);
   --status-cancelled-bg: rgba(120, 129, 140, 0.08);
+
+  /* Depth (light): warm-white bevels and shallow, slate-tinted contact
+     shadows; dark-theme shadows are not reused because they read as mud here. */
+  --elevation-1: inset 0 1px 0 var(--bevel-highlight-color),
+    0 1px 2px rgba(23, 28, 36, 0.05), 0 4px 12px rgba(23, 28, 36, 0.06);
+  --elevation-2: inset 0 1px 0 var(--bevel-highlight-color),
+    0 2px 4px rgba(23, 28, 36, 0.06), 0 10px 24px rgba(23, 28, 36, 0.09);
+  --elevation-3: inset 0 1px 0 var(--bevel-highlight-color),
+    0 4px 8px rgba(23, 28, 36, 0.07), 0 18px 40px rgba(23, 28, 36, 0.13);
+  --bevel-highlight-color: rgba(255, 255, 255, 0.9);
+  --ambient-key: rgba(255, 95, 0, 0.08);
+  --ambient-fill: rgba(79, 88, 100, 0.06);
+  --ambient-shadow: rgba(23, 28, 36, 0.14);
 }

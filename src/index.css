@@ -3430,3 +3430,431 @@ html[data-theme='light'] .explore-page {
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Depth foundation (Phase 0)
+   Opt-in conventions for the premium depth work. No element carries these
+   classes yet, so every page renders exactly as before. Later phases attach
+   them in markup; nothing here adds hover rules, backdrop-filter or motion to
+   layout elements.
+
+   Elevation  .depth-flat / .depth-resting / .depth-raised / .depth-focus
+   Press      .pressable, composed with one elevation class
+   Tilt       --tilt-perspective / --tilt-max (consumed in a later phase only)
+--------------------------------------------------------------------------- */
+.depth-flat { box-shadow: var(--elevation-0); }
+.depth-resting { box-shadow: var(--elevation-1); }
+.depth-raised { box-shadow: var(--elevation-2); }
+.depth-focus { box-shadow: var(--elevation-3); }
+
+.depth-surface,
+.pressable { transition: var(--depth-transition); }
+
+.pressable:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+  box-shadow: var(--elevation-0);
+}
+
+/* The press transform is pure feedback, so it is dropped entirely when motion
+   is reduced; colour and shadow states still change. */
+@media (prefers-reduced-motion: reduce) {
+  .depth-surface,
+  .pressable { transition: none; }
+
+  .pressable:active:not(:disabled) { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Explore card elevation (Phase 1A)
+   Builds on the Phase 0 depth tokens. Appended after the Explore block so the
+   scoped selectors win without rewriting the existing card rules.
+--------------------------------------------------------------------------- */
+
+/* Resting surface: contact shadow, top-edge bevel and a faint vertical wash. */
+.explore-page .grid .card {
+  border-color: var(--explore-border);
+  border-top-color: var(--explore-border-strong);
+  background:
+    linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+    var(--explore-panel);
+  box-shadow: var(--elevation-1);
+  transition: var(--depth-transition);
+}
+
+html[data-theme='light'] .explore-page .grid .card {
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+}
+
+/* Recessed media area: a soft top shade and vignette sit over the image, while
+   the invisible overlay keeps the card's top bevel visible above the media. */
+.explore-page .grid .card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--explore-card-radius) var(--explore-card-radius) 0 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 22%),
+    radial-gradient(125% 90% at 50% 0%, transparent 58%, rgba(0, 0, 0, 0.16) 100%);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+html[data-theme='light'] .explore-page .grid .card::before {
+  background:
+    linear-gradient(180deg, rgba(23, 28, 36, 0.08), transparent 20%),
+    radial-gradient(125% 90% at 50% 0%, transparent 62%, rgba(23, 28, 36, 0.07) 100%);
+}
+
+/* Floating action controls read as raised above the media. Selected states
+   keep their own orange treatment through their higher-specificity rules. */
+.explore-page .card .fav-btn--icon,
+.explore-page .card .workout-btn--compact {
+  box-shadow: var(--elevation-2);
+  transition:
+    var(--depth-transition),
+    background-color var(--transition-fast) var(--depth-ease),
+    color var(--transition-fast) var(--depth-ease);
+}
+
+/* The feedback chip stops before the favorite button instead of overlapping it. */
+.explore-page .card .card__feedback {
+  max-width: calc(100% - 4.35rem);
+  line-height: 1.35;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .explore-page .grid .card:hover,
+  .explore-page .grid .card:focus-within {
+    border-color: rgba(255, 95, 0, 0.55);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-4px);
+  }
+
+  .explore-page .grid .card:active {
+    box-shadow: var(--elevation-1);
+    transform: translateY(-1px);
+  }
+
+  .explore-page .card .fav-btn--icon:not(.is-active):hover,
+  .explore-page .card .workout-btn--compact:not(.workout-btn--selected):hover {
+    border-color: var(--explore-accent);
+    color: var(--color-accent-soft);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-1px);
+  }
+}
+
+/* Touch keeps the same static resting card; the existing unguarded :hover
+   rules are neutralised here so a tap cannot leave a lifted card behind. */
+@media (hover: none) {
+  .explore-page .grid .card:hover,
+  .explore-page .grid .card:focus-within {
+    border-color: var(--explore-border);
+    border-top-color: var(--explore-border-strong);
+    background:
+      linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+      var(--explore-panel);
+    box-shadow: var(--elevation-1);
+    transform: none;
+  }
+
+  html[data-theme='light'] .explore-page .grid .card:hover,
+  html[data-theme='light'] .explore-page .grid .card:focus-within {
+    background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+  }
+
+  .explore-page .card .fav-btn--icon:hover,
+  .explore-page .card .workout-btn--compact:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explore-page .grid .card,
+  .explore-page .card .fav-btn--icon,
+  .explore-page .card .workout-btn--compact { transition: none; }
+
+  .explore-page .grid .card:hover,
+  .explore-page .grid .card:focus-within,
+  .explore-page .grid .card:active,
+  .explore-page .card .fav-btn--icon:hover,
+  .explore-page .card .workout-btn--compact:hover { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Home dashboard elevation (Phase 1B)
+   Applies the Phase 0 depth tokens to the dashboard with the same conventions
+   as Phase 1A. Appended after the dashboard and Explore blocks, so these
+   scoped rules win without editing the original sections. Layout, spacing,
+   grid columns and breakpoints are untouched.
+--------------------------------------------------------------------------- */
+
+/* Hero: the one featured surface, so it sits above the resting panels. */
+.dashboard-home .dashboard-home__welcome { box-shadow: var(--elevation-2); }
+
+html[data-theme='dark'] .dashboard-home .dashboard-home__welcome {
+  background:
+    linear-gradient(180deg, var(--ambient-fill), transparent 52%),
+    radial-gradient(circle at 88% 0%, rgba(255, 95, 0, 0.2), transparent 44%),
+    var(--home-panel-bg);
+  box-shadow: var(--elevation-2);
+}
+
+html[data-theme='light'] .dashboard-home .dashboard-home__welcome {
+  border-color: rgba(255, 95, 0, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent 48%),
+    radial-gradient(circle at 88% 0%, rgba(255, 95, 0, 0.2), transparent 46%),
+    linear-gradient(135deg, #FFF1E6 0%, #FDF8F3 58%, #FFFFFF 100%);
+  box-shadow: var(--elevation-2);
+}
+
+/* Primary CTA keeps its orange glow and gains the shared top bevel. */
+.dashboard-home .dashboard-home__hero-actions .btn--primary {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 24px rgba(255, 95, 0, 0.22);
+}
+
+/* Panels rest at elevation 1. The attribute qualifier matches the specificity
+   of the legacy dark-theme shadow rules, so one token-based rule covers both
+   themes instead of restating the same shadow per theme. */
+html[data-theme] .dashboard-home .dashboard-home__overview,
+html[data-theme] .dashboard-home .dashboard-home__weekly,
+html[data-theme] .dashboard-home .dashboard-home__panel,
+html[data-theme] .dashboard-home .dashboard-home__quick,
+html[data-theme] .dashboard-home .dashboard-home__goals > .goal-panel {
+  box-shadow: var(--elevation-1);
+}
+
+/* Stat cards share the card-level resting elevation; hover raises them one
+   step. The depth transition also replaces the old transform snap. */
+.dashboard-home .dashboard-home__stats .dashboard-stat,
+.dashboard-home .dashboard-home__streak-stats .dashboard-stat {
+  box-shadow: var(--elevation-1);
+  transition: var(--depth-transition);
+}
+
+/* Recessed nested surfaces: the ambient fill is a slate tint in light mode and
+   a soft gray lift in dark mode, so neither theme borrows the other's shadow. */
+.dashboard-home .dashboard-home__empty,
+.dashboard-home .dashboard-home__weekly .activity-chart__track,
+.dashboard-home .goal-panel .goal-progress {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Goal cards sit inside the goal panel, so they get a bevel lip rather than a
+   full elevation. Achieved cards keep their green border and tint. */
+.dashboard-home .goal-panel .goal-card {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* Small dashboard controls: resting bevel, depth timing and a press state.
+   Their hover lift comes from the existing .btn translate, which is composed
+   with the new shadow instead of being overridden. */
+.dashboard-home .dashboard-home__actions .btn,
+.dashboard-home .dashboard-home__actions .btn:first-child,
+.dashboard-home .dashboard-home__view-plan {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.dashboard-home .dashboard-home__actions .btn:active:not(:disabled),
+.dashboard-home .dashboard-home__view-plan:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+  box-shadow: var(--elevation-0);
+}
+
+.dashboard-home .dashboard-home__hero-actions .btn:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-home .dashboard-home__stats .dashboard-stat:hover,
+  .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover {
+    border-color: var(--home-border-strong);
+    box-shadow: var(--elevation-2);
+  }
+
+  .dashboard-home .dashboard-home__actions .btn:hover:not(:disabled),
+  .dashboard-home .dashboard-home__view-plan:hover:not(:disabled) {
+    box-shadow: var(--elevation-1);
+  }
+}
+
+/* Touch keeps the static resting depth: the pre-existing unguarded stat hover
+   and the global .btn hover lift are neutralised for dashboard surfaces. */
+@media (hover: none) {
+  .dashboard-home .dashboard-home__stats .dashboard-stat:hover,
+  .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover {
+    border-color: var(--home-border);
+    box-shadow: var(--elevation-1);
+    transform: none;
+  }
+
+  .dashboard-home .dashboard-home__actions .btn:hover,
+  .dashboard-home .dashboard-home__view-plan:hover,
+  .dashboard-home .dashboard-home__hero-actions .btn:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-home .dashboard-home__stats .dashboard-stat,
+  .dashboard-home .dashboard-home__streak-stats .dashboard-stat,
+  .dashboard-home .dashboard-home__actions .btn,
+  .dashboard-home .dashboard-home__view-plan,
+  .dashboard-home .dashboard-home__hero-actions .btn { transition: none; }
+
+  .dashboard-home .dashboard-home__stats .dashboard-stat:hover,
+  .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover,
+  .dashboard-home .dashboard-home__actions .btn:hover,
+  .dashboard-home .dashboard-home__actions .btn:active,
+  .dashboard-home .dashboard-home__view-plan:hover,
+  .dashboard-home .dashboard-home__view-plan:active,
+  .dashboard-home .dashboard-home__hero-actions .btn:hover,
+  .dashboard-home .dashboard-home__hero-actions .btn:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Workout page elevation (Phase 1C)
+   Applies the Phase 0 depth tokens to WorkoutPage with the Phase 1A/1B
+   conventions. Scoped to .workout-page and appended, so no existing section,
+   layout, spacing or breakpoint changes. Panels that MainLayout reveals keep
+   their reveal transition untouched; only shadows and fills are set here.
+
+   Hierarchy: banner (raised) > builder / active session (main working surface)
+   > progress, plans, history panels (resting) > cards and sub-panels (resting
+   tiles) > exercise rows (bevel-only) > recessed inputs and empty states.
+--------------------------------------------------------------------------- */
+
+/* Page banner: the featured surface. */
+.workout-page > .dashboard-heading {
+  box-shadow: var(--elevation-2);
+}
+
+/* Main sections rest at elevation 1. The attribute qualifier matches the legacy
+   dark-theme shadow rules so these token shadows win in both themes. */
+html[data-theme] .workout-page .progress-overview,
+html[data-theme] .workout-page .plans-section,
+html[data-theme] .workout-page .history-section {
+  box-shadow: var(--elevation-1);
+}
+
+/* Builder and an active session sit one step above the resting panels. */
+html[data-theme] .workout-page .workout-builder,
+html[data-theme] .workout-page .active-session-section {
+  box-shadow: var(--elevation-2);
+}
+
+/* Form sub-panels inside the builder. */
+html[data-theme] .workout-page .session-panel {
+  box-shadow: var(--elevation-1);
+}
+
+/* Stat tiles inside the progress overview and the builder. The elevated surface
+   tone keeps them readable as tiles when a panel shares their fill colour. */
+html[data-theme] .workout-page .progress-overview .dashboard-stat,
+html[data-theme] .workout-page .dashboard-stat-grid .dashboard-stat {
+  background: var(--color-surface-elevated);
+  box-shadow: var(--elevation-1);
+}
+
+/* Saved plans and history entries read as raised cards on their panel. Only the
+   plan card gets hover feedback, because its action bar is the interactive area. */
+html[data-theme] .workout-page .plan-card,
+html[data-theme] .workout-page .history-card {
+  box-shadow: var(--elevation-1);
+}
+
+.workout-page .plan-card { transition: var(--depth-transition); }
+
+html[data-theme] .workout-page .plan-card:focus-within {
+  box-shadow: var(--elevation-2);
+}
+
+/* Exercise rows: a bevel lip plus the elevated tone separate them from the
+   builder without adding a second card shadow. Completed rows keep their green
+   border and strikethrough, and the toggle keeps its orange checked state. */
+html[data-theme] .workout-page .dashboard-exercise {
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* The legacy dark rule recolours every exercise row, which hides the green
+   completed border in dark mode. Restore it so completion stays visible. */
+html[data-theme] .workout-page .dashboard-exercise--complete {
+  border-color: rgba(37, 139, 99, 0.55);
+  background: rgba(37, 139, 99, 0.08);
+}
+
+/* Recessed surfaces: form fields, empty states inside builder/history, and the
+   weekly chart track. The ambient fill is slate-tinted in light, gray in dark. */
+.workout-page .input,
+.workout-page .prescription-field input,
+.workout-page .plan-editor__exercise input {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.workout-page .message {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.workout-page .progress-overview .activity-chart__track {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Controls: resting bevel, the shared depth timing and press feedback. The
+   existing .btn hover lift and focus rings are composed with, not replaced. */
+.workout-page .btn,
+.workout-page .complete-toggle,
+.workout-page .icon-btn,
+.workout-page .remove-icon {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.workout-page .btn:active:not(:disabled),
+.workout-page .complete-toggle:active,
+.workout-page .icon-btn:active:not(:disabled),
+.workout-page .remove-icon:active {
+  transform: translateY(var(--press-depth));
+}
+
+.workout-page > .workout-notice {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .workout-page .plan-card:hover { box-shadow: var(--elevation-2); }
+}
+
+/* Touch keeps the static card depth and drops the sticky .btn hover lift. */
+@media (hover: none) {
+  html[data-theme] .workout-page .plan-card:hover { box-shadow: var(--elevation-1); }
+
+  .workout-page .btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workout-page .plan-card,
+  .workout-page .btn,
+  .workout-page .complete-toggle,
+  .workout-page .icon-btn,
+  .workout-page .remove-icon { transition: none; }
+
+  .workout-page .btn:hover,
+  .workout-page .btn:active,
+  .workout-page .complete-toggle:active,
+  .workout-page .icon-btn:active,
+  .workout-page .remove-icon:active { transform: none; }
+}
