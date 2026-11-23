@@ -1,7 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import EmptyState from '../components/common/EmptyState.jsx'
 import ExerciseLearningCenter from '../components/exercises/ExerciseLearningCenter.jsx'
+import StudioFigureStage from '../features/home3d/StudioFigureStage.jsx'
+import {
+  buildSingleExerciseZoneState,
+  getZoneLabel,
+  mapExerciseToZones,
+} from '../features/home3d/studioZoneMapping.js'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
 import { useExerciseDisplayImage } from '../features/exercises/uploadedExerciseImages.js'
 import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
@@ -39,6 +45,7 @@ export default function WorkoutSessionPage() {
   const cancelSession = useWorkoutStore((state) => state.cancelSession)
   const [clock, setClock] = useState(0)
   const [restDurationOverride, setRestDurationOverride] = useState(null)
+  const [inspected, setInspected] = useState(null)
 
   const sessionId = session?.id
   const sessionStatus = session?.status
@@ -70,12 +77,27 @@ export default function WorkoutSessionPage() {
     if (remaining <= 0) pauseRestTimer()
   }, [now, restTimer, pauseRestTimer])
 
+  const currentZoneState = useMemo(
+    () => buildSingleExerciseZoneState(exercise),
+    [exercise],
+  )
+
+  const sessionZoneCounts = useMemo(() => {
+    const counts = { ...currentZoneState.counts }
+    for (const item of session?.exercises ?? []) {
+      if (item.status !== 'completed') continue
+      const { primaryZone } = mapExerciseToZones(item)
+      if (primaryZone) counts[primaryZone] = (counts[primaryZone] ?? 0) + 1
+    }
+    return counts
+  }, [session?.exercises, currentZoneState.counts])
+
   if (!session) {
     return (
       <section className="workout-session-page">
         <h1 className="visually-hidden">Workout session</h1>
         <EmptyState title="No workout is in progress" text="Start a saved plan or builder workout from your workout dashboard to begin an interactive session.">
-          <Link to="/workout" className="btn btn--primary">Go to workout dashboard</Link>
+          <Link to="/workout" className="btn btn--primary glint"><span className="glint__label">Go to workout dashboard</span></Link>
         </EmptyState>
       </section>
     )
@@ -86,6 +108,7 @@ export default function WorkoutSessionPage() {
   const pendingExercises = session.exercises.filter((item) => item.status === 'pending').length
   const completedSets = session.exercises.reduce((total, item) =>
     total + item.sets.filter((set) => set.completed).length, 0)
+  const currentCompletedSets = exercise ? exercise.sets.filter((set) => set.completed).length : 0
   const elapsedSeconds = session.elapsedSeconds + (
     session.status === 'active' && session.resumedAt
       ? Math.max(0, Math.floor((now - Date.parse(session.resumedAt)) / 1000))
@@ -97,6 +120,8 @@ export default function WorkoutSessionPage() {
       : Math.max(0, Math.ceil((Date.parse(restTimer.endsAt) - now) / 1000))
     : null
   const allExercisesResolved = pendingExercises === 0 && completedExercises > 0
+  const inspectedZone = exercise && inspected?.exerciseId === String(exercise.id) ? inspected.zoneId : null
+  const activeZone = inspectedZone ?? currentZoneState.primaryZone
 
   function finishWorkout() {
     if (!allExercisesResolved && !window.confirm('Some exercises are not marked completed or skipped. End this workout early and save its progress to history?')) return
@@ -114,6 +139,7 @@ export default function WorkoutSessionPage() {
   function changeExercise(index) {
     if (session.status === 'active') {
       setRestDurationOverride(null)
+      setInspected(null)
       setCurrentExercise(index)
     }
   }
@@ -147,132 +173,192 @@ export default function WorkoutSessionPage() {
       <header className="workout-session-header">
         <div>
           <p className="eyebrow">{session.status === 'paused' ? 'WORKOUT PAUSED' : 'WORKOUT IN PROGRESS'}</p>
-          <h1 id="workout-session-title">{session.name}</h1>
-          <p className="muted">Started {formatSessionDate(session.startedAt)} · active time {formatClock(elapsedSeconds)}</p>
+          <h1 id="workout-session-title" className="display">{session.name}</h1>
+          <p className="muted">Started {formatSessionDate(session.startedAt)} · active time <strong className="session-clock">{formatClock(elapsedSeconds)}</strong></p>
         </div>
         <div className="workout-session-header__actions">
           {session.status === 'paused'
-            ? <button type="button" className="btn btn--primary" onClick={resumeSession}>Resume workout</button>
-            : <button type="button" className="btn btn--primary" onClick={pauseSession}>Pause workout</button>}
+            ? <button type="button" className="btn btn--primary glint" onClick={resumeSession}><span className="glint__label">Resume workout</span></button>
+            : <button type="button" className="btn btn--primary glint" onClick={pauseSession}><span className="glint__label">Pause workout</span></button>}
           <button type="button" className="btn btn--danger" onClick={cancelWorkout}>Cancel</button>
         </div>
       </header>
 
-      <div className="workout-session-progress" aria-live="polite">
-        <div className="workout-session-progress__summary">
-          <strong>Exercise {currentIndex + 1} of {session.exercises.length}</strong>
-          <span>{completedExercises} completed · {skippedExercises} skipped · {pendingExercises} remaining</span>
-          <span>{completedSets} sets completed</span>
-        </div>
-        <div className="workout-session-progress__track" role="progressbar" aria-label="Exercise progress" aria-valuemin="0" aria-valuemax={session.exercises.length} aria-valuenow={completedExercises}>
-          <span style={{ width: `${completedExercises / session.exercises.length * 100}%` }} />
-        </div>
-        <ol className="workout-session-steps" aria-label="Workout exercises">
-          {session.exercises.map((item, index) => (
-            <li key={`${item.id}-${index}`}>
-              <button
-                type="button"
-                className={`workout-session-step workout-session-step--${item.status}${index === currentIndex ? ' is-current' : ''}`}
-                aria-current={index === currentIndex ? 'step' : undefined}
-                onClick={() => changeExercise(index)}
-                disabled={session.status !== 'active'}
-              >
-                <span>{index + 1}</span>
-                <span>{formatLabel(item.name)}</span>
-                <strong>{item.status === 'completed' ? 'Completed' : item.status === 'skipped' ? 'Skipped' : index === currentIndex ? 'Current' : 'Remaining'}</strong>
-              </button>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {exercise ? (
-        <article className="interactive-exercise" aria-labelledby="current-exercise-title">
-          <div className="interactive-exercise__heading">
-            <div>
-              <p className="eyebrow">CURRENT EXERCISE</p>
-              <h2 id="current-exercise-title">{formatLabel(exercise.name)}</h2>
-              <p className="muted">{formatLabel(exercise.target, 'Target not available')} · {formatLabel(exercise.equipment, 'Equipment not specified')}</p>
+      <div className="studio-split-layout">
+        <div className="studio-split-layout__main">
+          <div className="workout-session-progress" aria-live="polite">
+            <div className="workout-session-progress__summary">
+              <strong>Exercise {currentIndex + 1} of {session.exercises.length}</strong>
+              <span>{completedExercises} completed · {skippedExercises} skipped · {pendingExercises} remaining</span>
+              <span>{completedSets} sets completed</span>
             </div>
-            <Link className="btn" to={`/exercises/${exercise.id}`}>Exercise details</Link>
-          </div>
-          <ExerciseLearningCenter key={`${exercise.id}:${displayExercise?.gifUrl || 'default'}`} exercise={displayExercise} compact />
-
-          <section className="interactive-sets" aria-labelledby="set-tracking-title">
-            <div className="interactive-sets__heading">
-              <div><h3 id="set-tracking-title">Set tracking</h3><p className="muted">Plan: {exercise.config.sets} sets × {exercise.config.reps} target reps</p></div>
-              <p className="muted">Target repetitions are from your saved plan.</p>
+            <div className="workout-session-progress__track" role="progressbar" aria-label="Exercise progress" aria-valuemin="0" aria-valuemax={session.exercises.length} aria-valuenow={completedExercises}>
+              <span style={{ width: `${completedExercises / session.exercises.length * 100}%` }} />
             </div>
-            <div className={`interactive-set-grid${isBodyweight(exercise) ? ' is-bodyweight' : ''}`}>
-              {exercise.sets.map((set, setIndex) => (
-                <fieldset className={`interactive-set${set.completed ? ' active-set--complete' : ''}`} key={setIndex}>
-                  <legend>Set {set.setNumber}</legend>
-                  <p className="interactive-set__target">Target: {set.targetReps ?? exercise.config.reps} reps</p>
-                  <label>
-                    Completed reps
-                    <input type="number" min="0" max="100" step="1" value={set.reps} disabled={session.status !== 'active'} onChange={(event) => changeReps(setIndex, event.target.value)} />
-                  </label>
-                  {!isBodyweight(exercise) && (
-                    <label>
-                      Weight / resistance (your unit)
-                      <input type="number" min="0" max="10000" step="any" value={set.weight ?? ''} disabled={session.status !== 'active'} onChange={(event) => changeWeight(setIndex, event.target.value)} />
-                    </label>
-                  )}
-                  <label>
-                    Set note (optional)
-                    <input type="text" maxLength="200" value={set.note} disabled={session.status !== 'active'} onChange={(event) => updateActiveSetNote(exercise.id, setIndex, event.target.value)} />
-                  </label>
-                  <label className="interactive-set__complete">
-                    <input type="checkbox" checked={set.completed} disabled={session.status !== 'active'} onChange={() => toggleActiveSet(exercise.id, setIndex)} />
-                    Set completed
-                  </label>
-                </fieldset>
+            <ol className="workout-session-steps" aria-label="Workout exercises">
+              {session.exercises.map((item, index) => (
+                <li key={`${item.id}-${index}`}>
+                  <button
+                    type="button"
+                    className={`workout-session-step workout-session-step--${item.status}${index === currentIndex ? ' is-current' : ''}`}
+                    aria-current={index === currentIndex ? 'step' : undefined}
+                    onClick={() => changeExercise(index)}
+                    disabled={session.status !== 'active'}
+                  >
+                    <span>{index + 1}</span>
+                    <span>{formatLabel(item.name)}</span>
+                    <strong>{item.status === 'completed' ? 'Completed' : item.status === 'skipped' ? 'Skipped' : index === currentIndex ? 'Current' : 'Remaining'}</strong>
+                  </button>
+                </li>
               ))}
-            </div>
-          </section>
-
-          <section className="rest-timer" aria-labelledby="rest-timer-title">
-            <div className="rest-timer__display">
-              <p className="eyebrow" id="rest-timer-title">REST TIMER</p>
-              <strong className="rest-timer__time" role="timer" aria-live="off">{restRemaining == null ? formatClock(restDuration) : formatClock(restRemaining)}</strong>
-              <p className="muted">{restTimer?.paused ? 'Paused' : restTimer ? 'Counting down' : 'Ready when you are'}</p>
-            </div>
-            <label className="field">
-              Rest duration (seconds)
-              <input className="input" type="number" min="0" max="600" step="1" value={restDuration} disabled={session.status !== 'active'} onChange={(event) => setRestDurationOverride({ exerciseId: exercise.id, value: event.target.value })} />
-            </label>
-            <div className="rest-timer__actions">
-              {!restTimer
-                ? <button type="button" className="btn btn--primary" disabled={session.status !== 'active'} onClick={beginRest}>Start rest</button>
-                : restTimer.paused
-                  ? <button type="button" className="btn btn--primary" disabled={session.status !== 'active'} onClick={resumeRestTimer}>Resume timer</button>
-                  : <button type="button" className="btn" disabled={session.status !== 'active'} onClick={pauseRestTimer}>Pause timer</button>}
-              <button type="button" className="btn" disabled={session.status !== 'active'} onClick={resetRest}>Reset timer</button>
-              <button type="button" className="btn" disabled={!restTimer || session.status !== 'active'} onClick={skipRestTimer}>Skip rest</button>
-            </div>
-          </section>
-
-          <div className="interactive-exercise__controls">
-            <div className="interactive-exercise__navigation">
-              <button type="button" className="btn" disabled={session.status !== 'active' || currentIndex === 0} onClick={() => changeExercise(currentIndex - 1)}>Previous exercise</button>
-              <button type="button" className="btn" disabled={session.status !== 'active' || currentIndex === session.exercises.length - 1} onClick={() => changeExercise(currentIndex + 1)}>Next exercise</button>
-            </div>
-            <div className="interactive-exercise__status">
-              <button type="button" className="btn btn--primary" disabled={session.status !== 'active'} onClick={() => changeExerciseStatus(exercise.status === 'completed' ? 'pending' : 'completed')}>
-                {exercise.status === 'completed' ? 'Mark incomplete' : 'Mark exercise complete'}
-              </button>
-              <button type="button" className="btn" disabled={session.status !== 'active'} onClick={() => changeExerciseStatus(exercise.status === 'skipped' ? 'pending' : 'skipped')}>
-                {exercise.status === 'skipped' ? 'Undo skip' : 'Skip exercise'}
-              </button>
-            </div>
-            <button type="button" className="btn btn--primary interactive-exercise__finish" onClick={finishWorkout}>
-              {allExercisesResolved ? 'Finish workout' : 'End workout early'}
-            </button>
+            </ol>
           </div>
-        </article>
-      ) : (
-        <EmptyState title="This session has no exercises" text="Cancel it and start again from a saved plan." />
-      )}
+
+          {exercise ? (
+            <article className="interactive-exercise" aria-labelledby="current-exercise-title">
+              <div className="interactive-exercise__heading">
+                <div>
+                  <p className="eyebrow">CURRENT EXERCISE</p>
+                  <h2 id="current-exercise-title">{formatLabel(exercise.name)}</h2>
+                  <p className="muted">{formatLabel(exercise.target, 'Target not available')} · {formatLabel(exercise.equipment, 'Equipment not specified')}</p>
+                </div>
+                <Link className="btn" to={`/exercises/${exercise.id}`}>Exercise details</Link>
+              </div>
+              <ExerciseLearningCenter key={`${exercise.id}:${displayExercise?.gifUrl || 'default'}`} exercise={displayExercise} compact />
+
+              <section className="interactive-sets" aria-labelledby="set-tracking-title">
+                <div className="interactive-sets__heading">
+                  <div><h3 id="set-tracking-title">Set tracking</h3><p className="muted">Plan: {exercise.config.sets} sets × {exercise.config.reps} target reps</p></div>
+                  <p className="muted">Target repetitions are from your saved plan.</p>
+                </div>
+                <div className={`interactive-set-grid${isBodyweight(exercise) ? ' is-bodyweight' : ''}`}>
+                  {exercise.sets.map((set, setIndex) => (
+                    <fieldset className={`interactive-set${set.completed ? ' active-set--complete' : ''}`} key={setIndex}>
+                      <legend>Set {set.setNumber}</legend>
+                      <p className="interactive-set__target">Target: {set.targetReps ?? exercise.config.reps} reps</p>
+                      <label>
+                        Completed reps
+                        <input type="number" min="0" max="100" step="1" value={set.reps} disabled={session.status !== 'active'} onChange={(event) => changeReps(setIndex, event.target.value)} />
+                      </label>
+                      {!isBodyweight(exercise) && (
+                        <label>
+                          Weight / resistance (your unit)
+                          <input type="number" min="0" max="10000" step="any" value={set.weight ?? ''} disabled={session.status !== 'active'} onChange={(event) => changeWeight(setIndex, event.target.value)} />
+                        </label>
+                      )}
+                      <label>
+                        Set note (optional)
+                        <input type="text" maxLength="200" value={set.note} disabled={session.status !== 'active'} onChange={(event) => updateActiveSetNote(exercise.id, setIndex, event.target.value)} />
+                      </label>
+                      <label className="interactive-set__complete">
+                        <input type="checkbox" checked={set.completed} disabled={session.status !== 'active'} onChange={() => toggleActiveSet(exercise.id, setIndex)} />
+                        Set completed
+                      </label>
+                    </fieldset>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rest-timer" aria-labelledby="rest-timer-title">
+                <div className="rest-timer__display">
+                  <p className="eyebrow" id="rest-timer-title">REST TIMER</p>
+                  <strong className="rest-timer__time" role="timer" aria-live="off">{restRemaining == null ? formatClock(restDuration) : formatClock(restRemaining)}</strong>
+                  <p className="muted">{restTimer?.paused ? 'Paused' : restTimer ? 'Counting down' : 'Ready when you are'}</p>
+                </div>
+                <label className="field">
+                  Rest duration (seconds)
+                  <input className="input" type="number" min="0" max="600" step="1" value={restDuration} disabled={session.status !== 'active'} onChange={(event) => setRestDurationOverride({ exerciseId: exercise.id, value: event.target.value })} />
+                </label>
+                <div className="rest-timer__actions">
+                  {!restTimer
+                    ? <button type="button" className="btn btn--primary" disabled={session.status !== 'active'} onClick={beginRest}>Start rest</button>
+                    : restTimer.paused
+                      ? <button type="button" className="btn btn--primary" disabled={session.status !== 'active'} onClick={resumeRestTimer}>Resume timer</button>
+                      : <button type="button" className="btn" disabled={session.status !== 'active'} onClick={pauseRestTimer}>Pause timer</button>}
+                  <button type="button" className="btn" disabled={session.status !== 'active'} onClick={resetRest}>Reset timer</button>
+                  <button type="button" className="btn" disabled={!restTimer || session.status !== 'active'} onClick={skipRestTimer}>Skip rest</button>
+                </div>
+              </section>
+
+              <div className="interactive-exercise__controls">
+                <div className="interactive-exercise__navigation">
+                  <button type="button" className="btn" disabled={session.status !== 'active' || currentIndex === 0} onClick={() => changeExercise(currentIndex - 1)}>Previous exercise</button>
+                  <button type="button" className="btn" disabled={session.status !== 'active' || currentIndex === session.exercises.length - 1} onClick={() => changeExercise(currentIndex + 1)}>Next exercise</button>
+                </div>
+                <div className="interactive-exercise__status">
+                  <button type="button" className="btn btn--primary" disabled={session.status !== 'active'} onClick={() => changeExerciseStatus(exercise.status === 'completed' ? 'pending' : 'completed')}>
+                    {exercise.status === 'completed' ? 'Mark incomplete' : 'Mark exercise complete'}
+                  </button>
+                  <button type="button" className="btn" disabled={session.status !== 'active'} onClick={() => changeExerciseStatus(exercise.status === 'skipped' ? 'pending' : 'skipped')}>
+                    {exercise.status === 'skipped' ? 'Undo skip' : 'Skip exercise'}
+                  </button>
+                </div>
+                <button type="button" className="btn btn--primary glint interactive-exercise__finish" onClick={finishWorkout}>
+                  <span className="glint__label">{allExercisesResolved ? 'Finish workout' : 'End workout early'}</span>
+                </button>
+              </div>
+            </article>
+          ) : (
+            <EmptyState title="This session has no exercises" text="Cancel it and start again from a saved plan." />
+          )}
+        </div>
+
+        <div className="studio-split-layout__rail">
+          <StudioFigureStage
+            eyebrow="LIVE MUSCLE COACH"
+            title={
+              activeZone
+                ? <>Target: <em>{getZoneLabel(activeZone)}</em></>
+                : <>Session <em>anatomy</em></>
+            }
+            subtitle={
+              exercise
+                ? `${formatLabel(exercise.name)} — ${currentCompletedSets} of ${exercise.sets.length} sets logged.`
+                : 'Select an exercise step to track active muscle targets.'
+            }
+            counts={sessionZoneCounts}
+            selectedZone={activeZone}
+            cameraFocusZone={activeZone}
+            onSelectZone={(zoneId) =>
+              exercise && setInspected({
+                exerciseId: String(exercise.id),
+                zoneId: inspectedZone === zoneId ? currentZoneState.primaryZone : zoneId,
+              })
+            }
+            onClearSelection={() => setInspected(null)}
+            summary={`${completedExercises} of ${session.exercises.length} exercises completed`}
+            footer={
+              <>
+                <div className="studio-stage__tags">
+                  {currentZoneState.primaryZone && (
+                    <span className="studio-stage__tag studio-stage__tag--primary">
+                      Active: {getZoneLabel(currentZoneState.primaryZone)}
+                    </span>
+                  )}
+                  {currentZoneState.secondaryZones.map((sec) => (
+                    <span className="studio-stage__tag studio-stage__tag--secondary" key={sec}>
+                      Assist: {getZoneLabel(sec)}
+                    </span>
+                  ))}
+                  {restRemaining != null && (
+                    <span className="studio-stage__tag studio-stage__tag--primary">
+                      Rest · {formatClock(restRemaining)}
+                    </span>
+                  )}
+                </div>
+                {inspectedZone && inspectedZone !== currentZoneState.primaryZone && (
+                  <div className="studio-stage__footer-row">
+                    <span className="studio-stage__footer-note">Peeking at {getZoneLabel(inspectedZone)}</span>
+                    <button type="button" className="studio-stage__action-btn" onClick={() => setInspected(null)}>
+                      Back to active target
+                    </button>
+                  </div>
+                )}
+              </>
+            }
+          />
+        </div>
+      </div>
 
       <footer className="workout-session-footer">
         <Link to="/workout">Workout dashboard</Link>
@@ -281,3 +367,4 @@ export default function WorkoutSessionPage() {
     </section>
   )
 }
+

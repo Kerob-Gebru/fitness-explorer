@@ -12,8 +12,8 @@ export default function NotFoundPage({
   useDocumentTitle(title)
   return (
     <EmptyState title={title} text={text}>
-      <Link to={linkTo} className="btn btn--primary">
-        {linkLabel}
+      <Link to={linkTo} className="btn btn--primary glint">
+        <span className="glint__label">{linkLabel}</span>
       </Link>
     </EmptyState>
   )

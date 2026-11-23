@@ -8,7 +8,14 @@ import { formatLabel } from '../../utils/formatExercise.js'
 
 const FEEDBACK_MS = 2200
 
-export default function ExerciseCard({ exercise, reason, onReplace, replaceLabel = 'Replace in selected plan', replaceDisabled = false }) {
+export default function ExerciseCard({
+  exercise,
+  reason,
+  onReplace,
+  replaceLabel = 'Replace in selected plan',
+  replaceDisabled = false,
+  onHoverExercise = null,
+}) {
   const [feedback, setFeedback] = useState('')
   const feedbackTimer = useRef(null)
   const displayImage = useExerciseDisplayImage(exercise)
@@ -23,7 +30,15 @@ export default function ExerciseCard({ exercise, reason, onReplace, replaceLabel
   }
 
   return (
-    <article className={`card${reason || onReplace ? ' card--alternative' : ''}`}>
+    <article
+      className={`card${reason || onReplace ? ' card--alternative' : ''}`}
+      onMouseEnter={onHoverExercise ? () => onHoverExercise(exercise) : undefined}
+      onMouseLeave={onHoverExercise ? () => onHoverExercise(null) : undefined}
+      onFocus={onHoverExercise ? () => onHoverExercise(exercise) : undefined}
+      onBlur={onHoverExercise ? (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) onHoverExercise(null)
+      } : undefined}
+    >
       <Link to={`/exercises/${exercise.id}`} className="card__link">
         <ExerciseImage src={displayImage} name={exercise.name} />
         <div className="card__body">

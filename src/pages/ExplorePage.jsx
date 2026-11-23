@@ -5,11 +5,20 @@ import ExerciseGrid from '../components/exercises/ExerciseGrid.jsx'
 import Loader from '../components/common/Loader.jsx'
 import ErrorMessage from '../components/common/ErrorMessage.jsx'
 import EmptyState from '../components/common/EmptyState.jsx'
+import StudioFigureStage from '../features/home3d/StudioFigureStage.jsx'
+import {
+  getZoneLabel,
+  mapExerciseToZones,
+  mapMuscleNameToZone,
+  resolveZoneBodyPartFilter,
+  summarizeExercisesZones,
+} from '../features/home3d/studioZoneMapping.js'
 import useAsyncData from '../hooks/useAsyncData.js'
 import useDebounce from '../hooks/useDebounce.js'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
 import { getExercises, getFilterOptions } from '../services/exerciseApi.js'
 import { useSearchStore } from '../features/search/useSearchStore.js'
+import { formatLabel } from '../utils/formatExercise.js'
 import { sortExercises } from '../utils/exerciseSearch.js'
 
 const PAGE_SIZE = 12
@@ -25,14 +34,14 @@ const SORT_OPTIONS = [
 ]
 
 // Lives in its own component so "how many are shown" resets whenever the search changes.
-function Results({ exercises, hasActiveFilters, onReset }) {
+function Results({ exercises, hasActiveFilters, onReset, onHoverExercise }) {
   const [visible, setVisible] = useState(PAGE_SIZE)
 
   if (exercises.length === 0) {
     return hasActiveFilters ? (
       <EmptyState title="No exercises found" text="Try a different name, or remove some filters.">
-        <button type="button" className="btn btn--primary" onClick={onReset}>
-          Clear search and filters
+        <button type="button" className="btn btn--primary glint" onClick={onReset}>
+          <span className="glint__label">Clear search and filters</span>
         </button>
       </EmptyState>
     ) : (
@@ -45,7 +54,7 @@ function Results({ exercises, hasActiveFilters, onReset }) {
 
   return (
     <>
-      <ExerciseGrid exercises={exercises.slice(0, visible)} />
+      <ExerciseGrid exercises={exercises.slice(0, visible)} onHoverExercise={onHoverExercise} />
       {visible < exercises.length && (
         <div className="center">
           <button type="button" className="btn" onClick={() => setVisible(visible + PAGE_SIZE)}>
@@ -63,6 +72,7 @@ export default function ExplorePage() {
     useSearchStore()
   const debouncedSearch = useDebounce(search, 250)
   const [sortBy, setSortBy] = useState('recommended')
+  const [hoveredExercise, setHoveredExercise] = useState(null)
   const isSearching = debouncedSearch.trim().length > 0
 
   const { data: options } = useAsyncData(() => getFilterOptions(), [])
@@ -77,64 +87,142 @@ export default function ExplorePage() {
     [exercises, sortBy, debouncedSearch],
   )
 
+  const zoneSummary = useMemo(
+    () => summarizeExercisesZones(sortedExercises ?? []),
+    [sortedExercises],
+  )
+  const selectedZone = bodyPart ? mapMuscleNameToZone(bodyPart) : null
+  const hoveredExerciseZones = useMemo(
+    () => (hoveredExercise ? mapExerciseToZones(hoveredExercise) : null),
+    [hoveredExercise],
+  )
+  const hoveredZone = hoveredExerciseZones?.primaryZone ?? null
+  const selectedLabel = selectedZone ? getZoneLabel(selectedZone) : ''
+
+  function handleSelectZone(zoneId) {
+    if (selectedZone === zoneId) {
+      setBodyPart('')
+      return
+    }
+    setBodyPart(resolveZoneBodyPartFilter(zoneId, options?.bodyParts))
+  }
+
+  const stageSubtitle = hoveredExercise
+    ? `Previewing ${formatLabel(hoveredExercise.name)} — targets ${formatLabel(hoveredExercise.target || hoveredExercise.bodyPart)}.`
+    : selectedZone
+      ? `Filtering library by ${selectedLabel}. Click ${selectedLabel} again or reset to view all body parts.`
+      : 'Click any muscle zone on the 3D athlete to filter the library, or hover an exercise card to spotlight its target.'
+
+  const stageFooter = (
+    <div className="studio-stage__footer-row">
+      {hoveredExercise ? (
+        <div className="studio-stage__tags">
+          {hoveredExerciseZones?.primaryZone && (
+            <span className="studio-stage__tag studio-stage__tag--primary">
+              Primary: {getZoneLabel(hoveredExerciseZones.primaryZone)}
+            </span>
+          )}
+          {hoveredExerciseZones?.secondaryZones.slice(0, 2).map((sec) => (
+            <span className="studio-stage__tag studio-stage__tag--secondary" key={sec}>
+              Secondary: {getZoneLabel(sec)}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="studio-stage__footer-note">
+          {sortedExercises
+            ? `${sortedExercises.length} matched exercise${sortedExercises.length === 1 ? '' : 's'} mapped across ${zoneSummary.activeZones.length} muscle group${zoneSummary.activeZones.length === 1 ? '' : 's'}.`
+            : 'Loading exercise anatomy...'}
+        </p>
+      )}
+      {bodyPart && (
+        <button type="button" className="studio-stage__action-btn" onClick={() => setBodyPart('')}>
+          Clear {formatLabel(bodyPart)}
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <div className="explore-page">
       <div className="page-heading">
         <div>
           <p className="eyebrow">EXERCISE LIBRARY</p>
-          <h1>Explore exercises</h1>
+          <h1 className="display">Explore <em>exercises</em></h1>
           <p className="muted">
-            Search by name, muscle, body part, equipment or instructions, then narrow the list with filters.
+            Search by name, muscle, body part, equipment or instructions, or filter straight from the 3D anatomy model.
           </p>
         </div>
       </div>
 
-      <div className="toolbar">
-        <SearchBar value={search} onChange={setSearch} />
-        <ExerciseFilters
-          options={options ?? noOptions}
-          values={{ bodyPart, target, equipment }}
-          onChange={{ bodyPart: setBodyPart, target: setTarget, equipment: setEquipment }}
-          onReset={resetFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
-      </div>
+      <div className="studio-split-layout">
+        <div className="studio-split-layout__main">
+          <div className="toolbar">
+            <SearchBar value={search} onChange={setSearch} />
+            <ExerciseFilters
+              options={options ?? noOptions}
+              values={{ bodyPart, target, equipment }}
+              onChange={{ bodyPart: setBodyPart, target: setTarget, equipment: setEquipment }}
+              onReset={resetFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+          </div>
 
-      <div className="results-toolbar">
-        <div aria-live="polite" className="result-count">
-          {exercises &&
-            !error &&
-            (hasActiveFilters
-              ? `${exercises.length} ${exercises.length === 1 ? 'exercise matches' : 'exercises match'} your search`
-              : `${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'} in the library`)}
+          <div className="results-toolbar">
+            <div aria-live="polite" className="result-count">
+              {exercises &&
+                !error &&
+                (hasActiveFilters
+                  ? `${exercises.length} ${exercises.length === 1 ? 'exercise matches' : 'exercises match'} your search`
+                  : `${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'} in the library`)}
+            </div>
+            <label className="sort-control" htmlFor="exercise-sort">
+              Sort by
+              <select
+                id="exercise-sort"
+                className="input"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {isSearching && option.searchingLabel ? option.searchingLabel : option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {loading && <Loader label="Searching exercises..." />}
+          {error && <ErrorMessage error={error} onRetry={retry} />}
+          {sortedExercises && (
+            <Results
+              key={`${debouncedSearch.trim()}-${bodyPart}-${target}-${equipment}-${sortBy}`}
+              exercises={sortedExercises}
+              hasActiveFilters={hasActiveFilters}
+              onReset={resetFilters}
+              onHoverExercise={setHoveredExercise}
+            />
+          )}
         </div>
-        <label className="sort-control" htmlFor="exercise-sort">
-          Sort by
-          <select
-            id="exercise-sort"
-            className="input"
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {isSearching && option.searchingLabel ? option.searchingLabel : option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
 
-      {loading && <Loader label="Searching exercises..." />}
-      {error && <ErrorMessage error={error} onRetry={retry} />}
-      {sortedExercises && (
-        <Results
-          key={`${debouncedSearch.trim()}-${bodyPart}-${target}-${equipment}-${sortBy}`}
-          exercises={sortedExercises}
-          hasActiveFilters={hasActiveFilters}
-          onReset={resetFilters}
-        />
-      )}
+        <div className="studio-split-layout__rail">
+          <StudioFigureStage
+            eyebrow="3D MUSCLE FILTER"
+            title={selectedZone ? <>Filter: <em>{selectedLabel}</em></> : <>Target <em>anatomy</em></>}
+            subtitle={stageSubtitle}
+            counts={zoneSummary.counts}
+            selectedZone={selectedZone}
+            hoveredZone={hoveredZone}
+            cameraFocusZone={selectedZone}
+            onSelectZone={handleSelectZone}
+            onClearSelection={() => setBodyPart('')}
+            summary={sortedExercises ? `${sortedExercises.length} exercises` : ''}
+            footer={stageFooter}
+          />
+        </div>
+      </div>
     </div>
   )
 }
+

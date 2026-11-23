@@ -121,6 +121,7 @@ function SceneContent({
   view,
   viewNonce,
   compact,
+  centered,
   cinemaEnabled,
   mannequinRef,
   cameraGoalRef,
@@ -129,6 +130,7 @@ function SceneContent({
   invalidateRef,
   hoveredZone,
   selectedZone,
+  cameraZone,
   isSoftwareGl,
   onHoverZone,
   onSelectZone,
@@ -182,15 +184,15 @@ function SceneContent({
     let animateFigureRotation = true
 
     if (viewChanged && VIEW_PRESETS[view]) {
-      const wide = getDefaultWidePose({ compact })
+      const wide = getDefaultWidePose({ compact, centered })
       nextPose = {
         ...wide,
         yaw: VIEW_PRESETS[view].yaw,
         pitch: VIEW_PRESETS[view].pitch,
       }
       manualDragRef.current = false
-    } else if (selectedZone) {
-      const zonePreset = getZoneCameraPose(selectedZone, { compact })
+    } else if (cameraZone) {
+      const zonePreset = getZoneCameraPose(cameraZone, { compact, centered })
       if (zonePreset) {
         nextPose = zonePreset.pose
         manualDragRef.current = false
@@ -199,14 +201,14 @@ function SceneContent({
       nextPose = sampleCinemaPose(scrollProgressRef.current, { compact })
       animateFigureRotation = !manualDragRef.current
     } else {
-      const wide = getDefaultWidePose({ compact })
+      const wide = getDefaultWidePose({ compact, centered })
       const preset = VIEW_PRESETS[view] ?? VIEW_PRESETS.reset
       nextPose = {
         ...wide,
         yaw: preset.yaw,
         pitch: preset.pitch,
       }
-      animateFigureRotation = viewChanged || viewNonce === 0
+      animateFigureRotation = viewChanged || viewNonce === 0 || centered
     }
 
     if (!nextPose) return
@@ -216,7 +218,7 @@ function SceneContent({
       animateFigureRotation,
     }
 
-    if (reducedMotion || (viewNonce === 0 && !selectedZone && scrollProgressRef.current === 0 && cameraGoalRef.current)) {
+    if (reducedMotion || (viewNonce === 0 && !cameraZone && scrollProgressRef.current === 0 && cameraGoalRef.current)) {
       if (reducedMotion) {
         camera.position.set(...nextPose.pos)
         currentTargetRef.current.set(...nextPose.target)
@@ -232,8 +234,9 @@ function SceneContent({
   }, [
     view,
     viewNonce,
-    selectedZone,
+    cameraZone,
     compact,
+    centered,
     cinemaEnabled,
     camera,
     cameraGoalRef,
@@ -387,10 +390,12 @@ export default function FocusFigure3D({
   view = 'front',
   viewNonce = 0,
   compact = false,
+  centered = false,
   cinemaEnabled = true,
   onRegisterControls = null,
   hoveredZone,
   selectedZone,
+  cameraFocusZone = undefined,
   onHoverZone,
   onSelectZone,
   onClearSelection,
@@ -399,6 +404,7 @@ export default function FocusFigure3D({
   onFailure,
 }) {
   const palette = FIGURE_THEMES[theme] ?? FIGURE_THEMES.dark
+  const cameraZone = cameraFocusZone !== undefined ? cameraFocusZone : selectedZone
   const [isSoftwareGl] = useState(detectSoftwareWebGL)
   const mannequinRef = useRef(null)
   const cameraGoalRef = useRef(null)
@@ -533,11 +539,11 @@ export default function FocusFigure3D({
     isDragging ? 'is-dragging' : '',
   ].filter(Boolean).join(' ')
 
-  const initialPose = useMemo(() => (
-    cinemaEnabled
-      ? sampleCinemaPose(0, { compact })
-      : getDefaultWidePose({ compact })
-  ), [cinemaEnabled, compact])
+  const initialPose = useMemo(() => {
+    if (cinemaEnabled) return sampleCinemaPose(0, { compact })
+    if (cameraZone) return getZoneCameraPose(cameraZone, { compact, centered })?.pose ?? getDefaultWidePose({ compact, centered })
+    return getDefaultWidePose({ compact, centered })
+  }, [cinemaEnabled, compact, centered, cameraZone])
 
   return (
     <div
@@ -577,6 +583,7 @@ export default function FocusFigure3D({
           view={view}
           viewNonce={viewNonce}
           compact={compact}
+          centered={centered}
           cinemaEnabled={cinemaEnabled}
           mannequinRef={mannequinRef}
           cameraGoalRef={cameraGoalRef}
@@ -585,6 +592,7 @@ export default function FocusFigure3D({
           invalidateRef={invalidateRef}
           hoveredZone={hoveredZone}
           selectedZone={selectedZone}
+          cameraZone={cameraZone}
           isSoftwareGl={isSoftwareGl}
           onHoverZone={onHoverZone}
           onSelectZone={handleSelectZone}

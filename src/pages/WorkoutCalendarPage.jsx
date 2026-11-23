@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import EmptyState from '../components/common/EmptyState.jsx'
+import StudioFigureStage from '../features/home3d/StudioFigureStage.jsx'
+import {
+  getZoneLabel,
+  summarizeExercisesZones,
+} from '../features/home3d/studioZoneMapping.js'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
 import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
 import { localDateKey } from '../features/workout/workoutProgress.js'
@@ -50,6 +55,7 @@ export default function WorkoutCalendarPage() {
   const [note, setNote] = useState('')
   const [formError, setFormError] = useState('')
   const [notice, setNotice] = useState('')
+  const [inspectedZone, setInspectedZone] = useState(null)
 
   const todayKey = localDateKey(new Date())
   const monthTitle = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(month)
@@ -66,7 +72,7 @@ export default function WorkoutCalendarPage() {
     }
     return grouped
   }, [scheduledWorkouts])
-  const selectedWorkouts = workoutsByDate.get(selectedDate) ?? []
+  const selectedWorkouts = useMemo(() => workoutsByDate.get(selectedDate) ?? [], [workoutsByDate, selectedDate])
   const selectedWorkout = scheduledWorkouts.find((workout) => workout.id === selectedWorkoutId) ?? null
   const upcomingWorkouts = useMemo(() => scheduledWorkouts
     .filter((workout) => workout.status === 'scheduled' || workout.status === 'in-progress')
@@ -77,6 +83,53 @@ export default function WorkoutCalendarPage() {
   const archivedPlan = editingWorkout && !plans.some((plan) => plan.id === editingWorkout.planId)
     ? editingWorkout
     : null
+
+  const draftPlan = useMemo(() => {
+    if (!planId) return null
+    return plans.find((plan) => plan.id === planId)
+      ?? (archivedPlan && archivedPlan.planId === planId ? archivedPlan : null)
+  }, [planId, plans, archivedPlan])
+
+  const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`
+  const monthWorkouts = useMemo(
+    () => scheduledWorkouts.filter((workout) => workout.date?.startsWith(monthKey) && workout.status !== 'cancelled'),
+    [scheduledWorkouts, monthKey],
+  )
+
+  const calendarFocus = useMemo(() => {
+    if (draftPlan) {
+      return {
+        label: 'Draft plan preview',
+        name: draftPlan.name,
+        exercises: draftPlan.exercises ?? [],
+      }
+    }
+    if (selectedWorkout) {
+      return {
+        label: 'Selected workout',
+        name: selectedWorkout.name,
+        exercises: selectedWorkout.exercises ?? [],
+      }
+    }
+    if (selectedWorkouts.length > 0) {
+      return {
+        label: 'Selected day',
+        name: formatDateKey(selectedDate),
+        exercises: selectedWorkouts.flatMap((workout) => workout.exercises ?? []),
+      }
+    }
+    return {
+      label: 'Month split',
+      name: monthTitle,
+      exercises: monthWorkouts.flatMap((workout) => workout.exercises ?? []),
+    }
+  }, [draftPlan, selectedWorkout, selectedWorkouts, selectedDate, monthTitle, monthWorkouts])
+
+  const calendarZoneSummary = useMemo(
+    () => summarizeExercisesZones(calendarFocus.exercises),
+    [calendarFocus.exercises],
+  )
+  const activeZone = inspectedZone ?? calendarZoneSummary.dominantZone
 
   function resetForm(nextDate = selectedDate) {
     setEditingId(null)
@@ -170,8 +223,8 @@ export default function WorkoutCalendarPage() {
       <header className="page-heading calendar-heading">
         <div>
           <p className="eyebrow">PLAN YOUR TRAINING</p>
-          <h1 id="calendar-title">Workout calendar</h1>
-          <p className="muted">Schedule workouts from your saved plans. Planned workouts stay separate from completed history.</p>
+          <h1 id="calendar-title" className="display">Workout <em>calendar</em></h1>
+          <p className="muted">Schedule workouts from your saved plans, inspect target anatomy by day, and keep planned sessions separate from history.</p>
         </div>
         <Link className="btn" to="/workout">Workout dashboard</Link>
       </header>
@@ -238,6 +291,42 @@ export default function WorkoutCalendarPage() {
         </section>
 
         <aside className="calendar-sidebar">
+          <StudioFigureStage
+            eyebrow={calendarFocus.label.toUpperCase()}
+            title={
+              activeZone
+                ? <>Split: <em>{getZoneLabel(activeZone)}</em></>
+                : <>Schedule <em>anatomy</em></>
+            }
+            subtitle={
+              calendarFocus.exercises.length > 0
+                ? `${calendarFocus.name} — ${calendarFocus.exercises.length} exercise${calendarFocus.exercises.length === 1 ? '' : 's'} mapped.`
+                : `Select a day with workouts or choose a plan below to preview its muscles in 3D.`
+            }
+            counts={calendarZoneSummary.counts}
+            selectedZone={activeZone}
+            cameraFocusZone={activeZone}
+            onSelectZone={(zoneId) => setInspectedZone((current) => (current === zoneId ? null : zoneId))}
+            onClearSelection={() => setInspectedZone(null)}
+            sticky={false}
+            compactHeight
+            summary={`${calendarFocus.name} muscle split`}
+            footer={
+              <div className="studio-stage__footer-row">
+                <span className="studio-stage__footer-note">
+                  {activeZone && calendarZoneSummary.counts[activeZone] > 0
+                    ? `${getZoneLabel(activeZone)}: ${calendarZoneSummary.counts[activeZone]} mapped`
+                    : calendarFocus.name}
+                </span>
+                {planId && (
+                  <button type="button" className="studio-stage__action-btn" onClick={() => setPlanId('')}>
+                    Clear plan preview
+                  </button>
+                )}
+              </div>
+            }
+          />
+
           <section className="calendar-panel calendar-day-details" aria-labelledby="selected-day-title">
             <div className="dashboard-section-heading">
               <div><p className="eyebrow">SELECTED DAY</p><h2 id="selected-day-title">{formatDateKey(selectedDate)}</h2></div>
@@ -269,7 +358,7 @@ export default function WorkoutCalendarPage() {
                 {selectedWorkout.note && <p>{selectedWorkout.note}</p>}
                 {selectedWorkout.status === 'scheduled' && (
                   <div className="calendar-workout-detail__actions">
-                    <button type="button" className="btn btn--primary" onClick={() => handleStart(selectedWorkout)}>Start workout</button>
+                    <button type="button" className="btn btn--primary glint" onClick={() => handleStart(selectedWorkout)}><span className="glint__label">Start workout</span></button>
                     <button type="button" className="btn" onClick={() => beginEdit(selectedWorkout)}>Edit / reschedule</button>
                     <button type="button" className="btn btn--danger" onClick={() => handleCancel(selectedWorkout)}>Cancel workout</button>
                     <button type="button" className="btn" onClick={() => handleDelete(selectedWorkout)}>Delete calendar entry</button>
@@ -327,16 +416,17 @@ export default function WorkoutCalendarPage() {
             <label className="field calendar-schedule__note">Note (optional)<textarea className="input" rows="2" maxLength="300" value={note} onChange={(event) => setNote(event.target.value)} /></label>
             {formError && <p className="calendar-form-error" role="alert">{formError}</p>}
             <div className="calendar-schedule__actions">
-              <button className="btn btn--primary" type="submit">{editingId ? 'Save changes' : 'Schedule workout'}</button>
+              <button className="btn btn--primary glint" type="submit"><span className="glint__label">{editingId ? 'Save changes' : 'Schedule workout'}</span></button>
               {editingId && <button className="btn" type="button" onClick={resetForm}>Cancel editing</button>}
             </div>
           </form>
         ) : (
           <EmptyState title="No saved plans yet" text="Create a workout plan first, then you can add it to your calendar.">
-            <Link to="/workout" className="btn btn--primary">Go to workout builder</Link>
+            <Link to="/workout" className="btn btn--primary glint"><span className="glint__label">Go to workout builder</span></Link>
           </EmptyState>
         )}
       </section>
     </section>
   )
 }
+

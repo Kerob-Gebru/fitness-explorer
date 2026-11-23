@@ -9,7 +9,7 @@ import { formatLabel } from '../../utils/formatExercise.js'
 
 const MAX_ALTERNATIVES = 6
 
-export default function RelatedExercises({ exercise }) {
+export default function RelatedExercises({ exercise, onHoverExercise = null }) {
   const [equipmentFilter, setEquipmentFilter] = useState('')
   const [targetFilter, setTargetFilter] = useState('')
   const [bodyPartFilter, setBodyPartFilter] = useState('')
@@ -154,6 +154,7 @@ export default function RelatedExercises({ exercise }) {
                 reason={reasons.join(' ')}
                 onReplace={plansContainingExercise.length ? replaceExercise : undefined}
                 replaceDisabled={!selectedPlan}
+                onHoverExercise={onHoverExercise}
               />
             </li>
           ))}

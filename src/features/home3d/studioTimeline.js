@@ -320,16 +320,38 @@ export function getActiveScrollBeat(progress) {
   return null
 }
 
-export function getZoneCameraPose(zoneId, { compact = false } = {}) {
+export function getZoneCameraPose(zoneId, { compact = false, centered = false } = {}) {
   const entry = ZONE_CAMERA_PRESETS[zoneId]
   if (!entry) return null
+  if (centered) {
+    return {
+      side: entry.side,
+      pose: {
+        ...entry.compactPose,
+        pos: [
+          entry.compactPose.pos[0] * 0.72,
+          entry.compactPose.pos[1],
+          Math.max(3.15, entry.compactPose.pos[2] - 0.35),
+        ],
+        target: [0, entry.compactPose.target[1], entry.compactPose.target[2]],
+      },
+    }
+  }
   return {
     side: entry.side,
     pose: compact ? entry.compactPose : entry.pose,
   }
 }
 
-export function getDefaultWidePose({ compact = false } = {}) {
+export function getDefaultWidePose({ compact = false, centered = false } = {}) {
+  if (centered) {
+    return {
+      pos: [0.18, 0.16, 7.15],
+      target: [0, 0.12, 0],
+      yaw: -0.34,
+      pitch: 0.03,
+    }
+  }
   return compact
     ? {
         pos: [0, 0.16, 8.35],

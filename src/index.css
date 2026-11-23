@@ -5411,3 +5411,753 @@ html[data-theme='light'] .dashboard-sheet .category {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Unified Inner Pages Studio Layer
+   Extends Matte Charcoal + Soft White + Safety Orange + Editorial Typography
+   across every route while keeping each page's workflow & layout authentic.
+   --------------------------------------------------------------------------- */
+
+/* Shared Studio Page Banners & Display Typography */
+html[data-theme] .explore-page .page-heading,
+html[data-theme] .favorites-page .page-heading,
+html[data-theme] .calendar-page .calendar-heading,
+html[data-theme] .progress-page .progress-page__heading,
+html[data-theme] .workout-page > .dashboard-heading,
+html[data-theme] .workout-session-page .workout-session-header,
+html[data-theme] .exercise-details .details-heading {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.35rem, 3vw, 2.25rem) clamp(1.25rem, 3vw, 2.35rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 58% 95% at 94% 6%, rgba(255, 95, 0, 0.14), transparent 64%),
+    var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--elevation-2);
+}
+
+html[data-theme='light'] .explore-page .page-heading,
+html[data-theme='light'] .favorites-page .page-heading,
+html[data-theme='light'] .calendar-page .calendar-heading,
+html[data-theme='light'] .progress-page .progress-page__heading,
+html[data-theme='light'] .workout-page > .dashboard-heading,
+html[data-theme='light'] .workout-session-page .workout-session-header,
+html[data-theme='light'] .exercise-details .details-heading {
+  background:
+    radial-gradient(ellipse 58% 95% at 94% 6%, rgba(255, 95, 0, 0.08), transparent 64%),
+    #FFFFFF;
+}
+
+html[data-theme] .explore-page .page-heading h1,
+html[data-theme] .favorites-page .page-heading h1,
+html[data-theme] .calendar-page .calendar-heading h1,
+html[data-theme] .progress-page .progress-page__heading h1,
+html[data-theme] .workout-page > .dashboard-heading h1,
+html[data-theme] .workout-session-page .workout-session-header h1,
+html[data-theme] .exercise-details .details-heading h1 {
+  margin: 0 0 0.55rem;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96;
+  font-size: clamp(2.15rem, 4.1vw, 3.45rem);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: -0.025em;
+}
+
+html[data-theme] .workout-page > .dashboard-heading .eyebrow,
+html[data-theme] .workout-session-page .workout-session-header .eyebrow {
+  color: var(--color-accent-accessible);
+}
+
+html[data-theme] .workout-page > .dashboard-heading .muted,
+html[data-theme] .workout-session-page .workout-session-header .muted,
+html[data-theme] .favorites-page .page-heading .muted,
+html[data-theme] .calendar-page .calendar-heading .muted,
+html[data-theme] .progress-page .progress-page__heading .muted {
+  max-width: 58ch;
+  margin-bottom: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+/* Unified Section Titles inside Inner Pages */
+html[data-theme] .workout-page .dashboard-section-heading h2,
+html[data-theme] .progress-page .dashboard-section-heading h2,
+html[data-theme] .calendar-page .dashboard-section-heading h2,
+html[data-theme] .calendar-page .calendar-toolbar h2,
+html[data-theme] .exercise-details .learning-center__heading h2,
+html[data-theme] .exercise-details .exercise-image-upload__heading h2,
+html[data-theme] .exercise-details .section__head h2,
+html[data-theme] .workout-session-page .interactive-exercise__heading h2,
+html[data-theme] .workout-session-page .learning-center__heading h2 {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+}
+
+/* Primary Pill CTAs & Crisp Interactive Controls */
+html[data-theme] .btn--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+html[data-theme] .btn--primary:hover:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+  color: var(--color-accent-text);
+}
+
+html[data-theme] .page-heading .btn,
+html[data-theme] .details__actions .btn,
+html[data-theme] .details__actions .fav-btn,
+html[data-theme] .details__actions .workout-btn,
+html[data-theme] .message .btn,
+html[data-theme] .analytics-empty .btn,
+html[data-theme] .workout-session-header .btn,
+html[data-theme] .interactive-exercise__controls .btn,
+html[data-theme] .dashboard-bottom-actions .btn {
+  border-radius: 999px;
+  padding-inline: 1.25rem;
+  white-space: nowrap;
+}
+
+html[data-theme] .workout-session-header .btn--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+html[data-theme] .workout-session-header .btn:not(.btn--primary):not(.btn--danger) {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+html[data-theme] .workout-session-header .btn--danger {
+  border-color: rgba(255, 107, 107, 0.42);
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--color-danger-text);
+}
+
+/* Notice Banners (clean hairline + orange tint — no thick border-left stripes) */
+html[data-theme] .workout-notice {
+  border: 1px solid rgba(255, 95, 0, 0.36);
+  border-radius: 14px;
+  padding: 0.85rem 1.15rem;
+  background:
+    radial-gradient(ellipse 60% 100% at 0% 50%, rgba(255, 95, 0, 0.14), transparent 70%),
+    var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+
+/* Shared Empty State & Error Cards across all inner pages */
+html[data-theme] .main .message {
+  padding: clamp(2rem, 4.5vw, 3.25rem) clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 65% 75% at 50% 0%, rgba(255, 95, 0, 0.08), transparent 68%),
+    var(--color-surface);
+  box-shadow: var(--elevation-1);
+}
+
+html[data-theme='light'] .main .message {
+  background:
+    radial-gradient(ellipse 65% 75% at 50% 0%, rgba(255, 95, 0, 0.05), transparent 68%),
+    #FFFFFF;
+}
+
+html[data-theme] .main .message h2 {
+  margin-bottom: 0.55rem;
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+html[data-theme] .main .message p {
+  max-width: 48ch;
+  margin-bottom: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+/* Shared Exercise Cards on Explore, Favorites, & Related Exercises */
+html[data-theme] .card .card__title {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96;
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+}
+
+html[data-theme] .favorites-page {
+  display: grid;
+  gap: clamp(1rem, 1.8vw, 1.5rem);
+  min-width: 0;
+}
+
+html[data-theme] .favorites-page > * {
+  min-width: 0;
+  margin-block: 0;
+}
+
+html[data-theme] .favorites-page .card {
+  border-radius: 18px;
+}
+
+html[data-theme] .favorites-page .card .card__body {
+  padding: 1rem 3.5rem 1.15rem 1rem;
+}
+
+html[data-theme] .favorites-page .card .chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme] .explore-page .card .chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme] .explore-page .results-toolbar .result-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .explore-page .filters-block .field label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+/* ---------------------------------------------------------------------------
+   Exercise Details (/exercises/:id) — Technique & Media Dossier
+   --------------------------------------------------------------------------- */
+html[data-theme] .exercise-details .details-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+html[data-theme] .exercise-details .details-breadcrumb a {
+  color: var(--color-accent-accessible);
+  text-decoration: none;
+}
+
+html[data-theme] .exercise-details .details-breadcrumb a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+html[data-theme] .exercise-details .details-heading {
+  margin-bottom: 1.35rem;
+}
+
+html[data-theme] .exercise-details .exercise-image-upload {
+  padding: clamp(1.1rem, 2.5vw, 1.55rem);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+html[data-theme='light'] .exercise-details .exercise-image-upload {
+  background: #FFFFFF;
+}
+
+html[data-theme] .exercise-details .exercise-image-upload__preview {
+  border-radius: 12px;
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+}
+
+html[data-theme] .exercise-details .exercise-image-upload__file .muted {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .learning-center {
+  gap: 1.25rem;
+  padding: clamp(1.15rem, 3vw, 1.9rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--elevation-1);
+}
+
+html[data-theme='light'] .learning-center {
+  background: #FFFFFF;
+}
+
+html[data-theme] .learning-center__media,
+html[data-theme] .learning-center__guide,
+html[data-theme] .learning-center__metadata,
+html[data-theme] .learning-center__technique {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-secondary);
+}
+
+html[data-theme='light'] .learning-center__media,
+html[data-theme='light'] .learning-center__guide,
+html[data-theme='light'] .learning-center__metadata,
+html[data-theme='light'] .learning-center__technique {
+  background: #F7F7F8;
+}
+
+html[data-theme] .learning-center__visual-frame {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #0D0F13;
+}
+
+html[data-theme='light'] .learning-center__visual-frame:not(.learning-center__visual-frame--video) {
+  background: #ECEEF2;
+}
+
+/* Active instruction viewer: studio charcoal + subtle orange accent border */
+html[data-theme] .learning-center__viewer {
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(255, 95, 0, 0.42);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 70% 110% at 100% 0%, rgba(255, 95, 0, 0.16), transparent 65%),
+    var(--color-surface);
+  color: var(--color-text);
+}
+
+html[data-theme='light'] .learning-center__viewer {
+  background:
+    radial-gradient(ellipse 70% 110% at 100% 0%, rgba(255, 95, 0, 0.1), transparent 65%),
+    #FFFFFF;
+}
+
+html[data-theme] .learning-center__viewer-index {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  color: var(--color-accent-accessible);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+html[data-theme] .learning-center__step-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+html[data-theme] .learning-center__steps li {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+html[data-theme='light'] .learning-center__steps li {
+  background: #FFFFFF;
+}
+
+html[data-theme] .learning-center__steps li.is-current {
+  border-color: rgba(255, 95, 0, 0.52);
+  background: rgba(255, 95, 0, 0.1);
+}
+
+html[data-theme] .learning-center__steps li > span {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 95, 0, 0.14);
+  color: var(--color-accent-accessible);
+}
+
+html[data-theme] .learning-center__steps li.is-current > span {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+html[data-theme] .learning-center__facts dt,
+html[data-theme] .learning-center__info-group h4,
+html[data-theme] .learning-center__guidance-group h4 {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* ---------------------------------------------------------------------------
+   Workout Studio (/workout) — Routine Builder & History
+   --------------------------------------------------------------------------- */
+html[data-theme] .workout-page .progress-overview,
+html[data-theme] .workout-page .plans-section,
+html[data-theme] .workout-page .workout-builder,
+html[data-theme] .workout-page .history-section {
+  padding: clamp(1.15rem, 2.6vw, 1.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+html[data-theme='light'] .workout-page .progress-overview,
+html[data-theme='light'] .workout-page .plans-section,
+html[data-theme='light'] .workout-page .workout-builder,
+html[data-theme='light'] .workout-page .history-section {
+  background: #FFFFFF;
+}
+
+/* Replace thick left accent stripe on active session card with sleek studio halo */
+html[data-theme] .workout-page .active-session-section {
+  padding: clamp(1.15rem, 2.6vw, 1.65rem);
+  border: 1px solid rgba(255, 95, 0, 0.42);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 60% 100% at 0% 50%, rgba(255, 95, 0, 0.14), transparent 65%),
+    var(--color-surface);
+}
+
+html[data-theme='light'] .workout-page .active-session-section {
+  background:
+    radial-gradient(ellipse 60% 100% at 0% 50%, rgba(255, 95, 0, 0.08), transparent 65%),
+    #FFFFFF;
+}
+
+html[data-theme] .workout-page .dashboard-stat strong,
+html[data-theme] .progress-page .dashboard-stat strong {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96;
+  font-size: clamp(1.65rem, 2.2vw, 2.05rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .workout-page .dashboard-stat strong small,
+html[data-theme] .progress-page .dashboard-stat strong small {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .workout-page .activity-chart__count,
+html[data-theme] .workout-page .activity-chart__label {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .workout-page .activity-chart__label {
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .workout-page .count-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(255, 95, 0, 0.3);
+  background: rgba(255, 95, 0, 0.1);
+  color: var(--color-accent-accessible);
+}
+
+html[data-theme] .workout-page .plan-card,
+html[data-theme] .workout-page .history-card,
+html[data-theme] .workout-page .session-panel {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-secondary);
+}
+
+html[data-theme='light'] .workout-page .plan-card,
+html[data-theme='light'] .workout-page .history-card,
+html[data-theme='light'] .workout-page .session-panel {
+  background: #F7F7F8;
+}
+
+html[data-theme] .workout-page .dashboard-exercise {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+html[data-theme] .workout-page .dashboard-exercise__number,
+html[data-theme] .workout-page .prescription-total strong,
+html[data-theme] .workout-page .field-label {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .workout-page .field-label {
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+/* ---------------------------------------------------------------------------
+   Live Workout Session (/workout/session) — In-Gym Focus HUD
+   --------------------------------------------------------------------------- */
+html[data-theme] .workout-session-page .session-clock {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  margin-left: 0.25rem;
+  border: 1px solid rgba(255, 95, 0, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 95, 0, 0.12);
+  color: var(--color-accent-accessible);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .workout-session-page .workout-session-progress,
+html[data-theme] .workout-session-page .interactive-exercise {
+  padding: clamp(1.15rem, 2.8vw, 1.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+html[data-theme='light'] .workout-session-page .workout-session-progress,
+html[data-theme='light'] .workout-session-page .interactive-exercise {
+  background: #FFFFFF;
+}
+
+html[data-theme] .workout-session-page .workout-session-progress__summary {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .workout-session-page .workout-session-step {
+  border-radius: 14px;
+}
+
+html[data-theme] .workout-session-page .workout-session-step > span:first-child {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .workout-session-page .workout-session-step strong {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .workout-session-page .interactive-set {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0.95rem;
+}
+
+html[data-theme] .workout-session-page .interactive-set legend {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent-accessible);
+}
+
+html[data-theme] .workout-session-page .interactive-set input:not([type="checkbox"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sculptural Rest Timer (no thick top mustard bar) */
+html[data-theme] .workout-session-page .rest-timer {
+  padding: clamp(1.1rem, 2.4vw, 1.5rem);
+  border: 1px solid rgba(255, 95, 0, 0.36);
+  border-top: 1px solid rgba(255, 95, 0, 0.36);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 65% 110% at 10% 50%, rgba(255, 95, 0, 0.14), transparent 65%),
+    var(--color-surface-secondary);
+}
+
+html[data-theme='light'] .workout-session-page .rest-timer {
+  background:
+    radial-gradient(ellipse 65% 110% at 10% 50%, rgba(255, 95, 0, 0.08), transparent 65%),
+    #F7F7F8;
+}
+
+html[data-theme] .workout-session-page .rest-timer__time {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96;
+  font-size: clamp(2.1rem, 4.4vw, 3.1rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent-accessible);
+}
+
+html[data-theme] .workout-session-footer {
+  padding-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------------
+   Workout Calendar (/calendar) — Editorial Monthly Planner
+   --------------------------------------------------------------------------- */
+html[data-theme] .calendar-page .calendar-panel {
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+html[data-theme='light'] .calendar-page .calendar-panel {
+  background: #FFFFFF;
+}
+
+html[data-theme] .calendar-page .calendar-grid {
+  border-radius: 14px;
+  overflow: hidden;
+  border-color: var(--color-border);
+}
+
+html[data-theme] .calendar-page .calendar-weekday {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--color-surface-secondary);
+  border-color: var(--color-border);
+}
+
+html[data-theme] .calendar-page .calendar-day {
+  border-color: var(--color-border);
+  background: var(--color-bg);
+}
+
+html[data-theme='light'] .calendar-page .calendar-day {
+  background: #FFFFFF;
+}
+
+html[data-theme] .calendar-page .calendar-day--outside {
+  background: var(--color-surface-secondary);
+  opacity: 0.72;
+}
+
+html[data-theme] .calendar-page .calendar-day--today {
+  background: rgba(255, 95, 0, 0.1);
+}
+
+html[data-theme] .calendar-page .calendar-day__date {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .calendar-page .calendar-today-label {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .calendar-page .calendar-agenda__item {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.85rem 0.95rem;
+}
+
+/* Subtle tint & hairline border for completed / cancelled agenda items instead of heavy 3px left bar */
+html[data-theme] .calendar-page .calendar-agenda__item--completed {
+  border-left-width: 1px;
+  border-color: rgba(37, 139, 99, 0.45);
+  background: rgba(37, 139, 99, 0.08);
+}
+
+html[data-theme] .calendar-page .calendar-agenda__item--cancelled {
+  border-left-width: 1px;
+  border-color: rgba(229, 96, 91, 0.35);
+  background: rgba(229, 96, 91, 0.06);
+}
+
+/* ---------------------------------------------------------------------------
+   Progress Analytics (/progress) — Clean Quantitative Telemetry
+   --------------------------------------------------------------------------- */
+html[data-theme] .progress-page .goal-panel,
+html[data-theme] .progress-page .analytics-section,
+html[data-theme] .progress-page .analytics-empty {
+  padding: clamp(1.15rem, 2.6vw, 1.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+html[data-theme='light'] .progress-page .goal-panel,
+html[data-theme='light'] .progress-page .analytics-section,
+html[data-theme='light'] .progress-page .analytics-empty {
+  background: #FFFFFF;
+}
+
+html[data-theme] .progress-page .goal-card,
+html[data-theme] .progress-page .trend-chart,
+html[data-theme] .progress-page .milestone {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+html[data-theme] .progress-page .goal-card__heading > strong {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96;
+  font-size: 1.55rem;
+  font-weight: 400;
+  color: var(--color-accent-accessible);
+}
+
+html[data-theme] .progress-page .trend-chart__count,
+html[data-theme] .progress-page .trend-chart__label {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .progress-page .trend-chart__label {
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .progress-page .milestone__state {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+
