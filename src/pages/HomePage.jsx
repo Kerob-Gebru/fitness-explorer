@@ -63,87 +63,135 @@ export default function HomePage() {
       ? 'Continue building'
       : 'Build a workout'
 
+  const upcomingWorkouts = scheduledWorkouts
+    .filter((workout) => workout.status === 'scheduled' || workout.status === 'in-progress')
+    .sort((first, second) => first.date.localeCompare(second.date) || (first.time || '').localeCompare(second.time || ''))
+    .slice(0, 3)
+
+  const studioLead = (
+    <header className="studio-lead">
+      <div className="studio-lead__top">
+        <p className="eyebrow">YOUR FITNESS STUDIO</p>
+        <time className="dashboard-home__date" dateTime={localDateKey(currentDate)}>{today}</time>
+      </div>
+      <h1 id="dashboard-title">Find your stronger side.</h1>
+      <p className="muted studio-lead__subtitle">
+        A little movement. A lot of momentum. Inspect your weekly muscle distribution and jump straight into training.
+      </p>
+      <div className="dashboard-home__hero-actions">
+        <Link className="btn btn--primary" to={activeSession ? '/workout/session' : '/workout'}>
+          {nextWorkoutLabel} <span aria-hidden="true">↗</span>
+        </Link>
+        <Link className="btn" to="/explore">Explore exercises</Link>
+      </div>
+    </header>
+  )
+
+  const studioTelemetry = (
+    <div className="studio-telemetry">
+      <div className="studio-telemetry__overview" aria-labelledby="dashboard-overview-title">
+        <div className="studio-telemetry__head">
+          <div>
+            <p className="eyebrow">ACTIVITY SNAPSHOT</p>
+            <h2 id="dashboard-overview-title">Training overview</h2>
+          </div>
+          <p className="muted studio-telemetry__summary">
+            {stats.weeklyWorkouts === 0
+              ? 'No completed workouts yet this week.'
+              : `${stats.weeklyWorkouts} workout${stats.weeklyWorkouts === 1 ? '' : 's'} completed this week.`}
+          </p>
+        </div>
+
+        <dl className="studio-telemetry__metrics">
+          <div className="studio-metric">
+            <dt>Completed</dt>
+            <dd>{stats.totalWorkouts}</dd>
+          </div>
+          <div className="studio-metric">
+            <dt>This week</dt>
+            <dd>{stats.weeklyWorkouts}</dd>
+          </div>
+          <div className="studio-metric">
+            <dt>Current streak</dt>
+            <dd>{stats.currentStreak}<span> {stats.currentStreak === 1 ? 'day' : 'days'}</span></dd>
+          </div>
+          <div className="studio-metric">
+            <dt>Saved plans</dt>
+            <dd>{plans.length}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="studio-telemetry__weekly" aria-labelledby="dashboard-weekly-title">
+        <div className="studio-telemetry__head">
+          <div>
+            <p className="eyebrow">MONDAY – SUNDAY</p>
+            <h2 id="dashboard-weekly-title">Weekly cadence</h2>
+          </div>
+          <span className="muted">{stats.weeklyWorkouts} completed</span>
+        </div>
+        <div
+          className="activity-chart studio-telemetry__chart"
+          role="img"
+          aria-label={`Completed workouts this calendar week: ${stats.weekDays.map((day) => `${day.label} ${day.count}`).join(', ')}`}
+        >
+          {stats.weekDays.map((day) => {
+            const maximum = Math.max(1, ...stats.weekDays.map((item) => item.count))
+            return (
+              <div className="activity-chart__day" key={day.date} title={`${day.count} completed workout${day.count === 1 ? '' : 's'}`}>
+                <span className="activity-chart__count">{day.count}</span>
+                <span className="activity-chart__track"><span style={{ height: `${day.count ? Math.max(14, day.count / maximum * 100) : 0}%` }} /></span>
+                <span className="activity-chart__label">{day.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <>
       <section className="dashboard-home" aria-labelledby="dashboard-title">
-        <header className="dashboard-home__welcome dashboard-home__welcome--focus">
-          <div>
-            <p className="eyebrow">YOUR FITNESS SPACE</p>
-            <h1 id="dashboard-title">Find your stronger side.</h1>
-            <p className="muted">A little movement. A lot of momentum. Your training, ready when you are.</p>
-            <div className="dashboard-home__hero-actions">
-              <Link className="btn btn--primary" to={activeSession ? '/workout/session' : '/workout'}>
-                {nextWorkoutLabel} <span aria-hidden="true">↗</span>
-              </Link>
-              <Link className="btn" to="/explore">Explore exercises</Link>
-            </div>
-          </div>
-          <div className="dashboard-home__hero-rail">
-            <time className="dashboard-home__date" dateTime={localDateKey(currentDate)}>{today}</time>
-            <FocusFigure data={focusData} onExploreZone={openFocusZone} />
-          </div>
-        </header>
+        <FocusFigure
+          data={focusData}
+          onExploreZone={openFocusZone}
+          leadContent={studioLead}
+          telemetryContent={studioTelemetry}
+        />
 
-        <section className="dashboard-home__overview" aria-labelledby="dashboard-overview-title">
-          <div className="dashboard-section-heading">
-            <div>
-              <p className="eyebrow">YOUR ACTIVITY</p>
-              <h2 id="dashboard-overview-title">Training overview</h2>
-            </div>
-            <p className="muted dashboard-home__summary">
-              {stats.weeklyWorkouts === 0
-                ? 'No completed workouts yet this calendar week. Ready when you are.'
-                : `${stats.weeklyWorkouts} workout${stats.weeklyWorkouts === 1 ? '' : 's'} completed this calendar week.`}
-            </p>
-          </div>
-          <div className="dashboard-home__stats">
-            <article className="dashboard-stat">
-              <span className="dashboard-stat__icon" aria-hidden="true">✓</span>
-              <div><p className="muted">Completed workouts</p><strong>{stats.totalWorkouts}</strong></div>
-            </article>
-            <article className="dashboard-stat">
-              <span className="dashboard-stat__icon" aria-hidden="true">▦</span>
-              <div><p className="muted">This week</p><strong>{stats.weeklyWorkouts}</strong></div>
-            </article>
-            <article className="dashboard-stat">
-              <span className="dashboard-stat__icon" aria-hidden="true">↗</span>
-              <div><p className="muted">Current streak</p><strong>{stats.currentStreak}<small> {stats.currentStreak === 1 ? 'day' : 'days'}</small></strong></div>
-            </article>
-            <article className="dashboard-stat">
-              <span className="dashboard-stat__icon" aria-hidden="true">▤</span>
-              <div><p className="muted">Saved plans</p><strong>{plans.length}</strong></div>
-            </article>
-          </div>
-        </section>
+        <div className="dashboard-home__goals">
+          <GoalProgressPanel stats={stats} />
 
-        <section className="dashboard-home__weekly" aria-labelledby="dashboard-weekly-title">
-          <div className="dashboard-section-heading">
-            <div><p className="eyebrow">MONDAY – SUNDAY</p><h2 id="dashboard-weekly-title">Weekly activity</h2></div>
-            <span className="muted">{stats.weeklyWorkouts} completed this week</span>
-          </div>
-          <div
-            className="activity-chart dashboard-home__chart"
-            role="img"
-            aria-label={`Completed workouts this calendar week: ${stats.weekDays.map((day) => `${day.label} ${day.count}`).join(', ')}`}
-          >
-            {stats.weekDays.map((day) => {
-              const maximum = Math.max(1, ...stats.weekDays.map((item) => item.count))
-              return (
-                <div className="activity-chart__day" key={day.date} title={`${day.count} completed workout${day.count === 1 ? '' : 's'}`}>
-                  <span className="activity-chart__count">{day.count}</span>
-                  <span className="activity-chart__track"><span style={{ height: `${day.count ? Math.max(12, day.count / maximum * 100) : 0}%` }} /></span>
-                  <span className="activity-chart__label">{day.label}</span>
+          <section className="dashboard-home__panel dashboard-home__streak" aria-labelledby="dashboard-streak-title">
+            <div className="dashboard-section-heading">
+              <div><p className="eyebrow">CONSISTENCY & VOLUME</p><h2 id="dashboard-streak-title">All-time momentum</h2></div>
+              <Link to="/progress">View analytics ↗</Link>
+            </div>
+            <div className="dashboard-home__streak-stats">
+              <article className="dashboard-stat">
+                <span className="dashboard-stat__icon" aria-hidden="true">★</span>
+                <div>
+                  <p className="muted">Longest streak</p>
+                  <strong>{stats.longestStreak}<small> {stats.longestStreak === 1 ? 'day' : 'days'}</small></strong>
                 </div>
-              )
-            })}
-          </div>
-        </section>
+              </article>
+              <article className="dashboard-stat">
+                <span className="dashboard-stat__icon" aria-hidden="true">✓</span>
+                <div>
+                  <p className="muted">Exercises done</p>
+                  <strong>{stats.exercisesCompleted}</strong>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
 
-        <div className="dashboard-home__lower">
+        <div className="dashboard-home__pipeline">
           <section className="dashboard-home__panel" aria-labelledby="dashboard-recent-title">
             <div className="dashboard-section-heading">
               <div><p className="eyebrow">COMPLETED SESSIONS</p><h2 id="dashboard-recent-title">Recent workouts</h2></div>
-              <Link to="/workout#history">View history</Link>
+              <Link to="/workout#history">History</Link>
             </div>
             {recentSessions.length > 0 ? (
               <ul className="dashboard-home__list">
@@ -180,31 +228,32 @@ export default function HomePage() {
               </ul>
             ) : (
               <div className="dashboard-home__empty">
-                <p className="muted">No saved plans yet. Build a routine from exercises and save it for later.</p>
+                <p className="muted">No saved plans yet. Build a routine and save it for repeat sessions.</p>
                 <Link to="/explore">Find exercises to build a plan</Link>
               </div>
             )}
           </section>
-        </div>
 
-        <div className="dashboard-home__goals">
-          <GoalProgressPanel stats={stats} />
-
-          <section className="dashboard-home__panel dashboard-home__streak" aria-labelledby="dashboard-streak-title">
+          <section className="dashboard-home__panel dashboard-home__upcoming" aria-labelledby="dashboard-upcoming-title">
             <div className="dashboard-section-heading">
-              <div><p className="eyebrow">CONSISTENCY</p><h2 id="dashboard-streak-title">Streak progress</h2></div>
-              <Link to="/progress">View progress</Link>
+              <div><p className="eyebrow">ON YOUR CALENDAR</p><h2 id="dashboard-upcoming-title">Upcoming workouts</h2></div>
+              <Link to="/calendar">Calendar</Link>
             </div>
-            <div className="dashboard-home__streak-stats">
-              <article className="dashboard-stat">
-                <span className="dashboard-stat__icon" aria-hidden="true">↗</span>
-                <div><p className="muted">Current streak</p><strong>{stats.currentStreak}<small> {stats.currentStreak === 1 ? 'day' : 'days'}</small></strong></div>
-              </article>
-              <article className="dashboard-stat">
-                <span className="dashboard-stat__icon" aria-hidden="true">★</span>
-                <div><p className="muted">Longest streak</p><strong>{stats.longestStreak}<small> {stats.longestStreak === 1 ? 'day' : 'days'}</small></strong></div>
-              </article>
-            </div>
+            {upcomingWorkouts.length > 0 ? (
+              <ul className="dashboard-home__list">
+                {upcomingWorkouts.map((workout) => (
+                  <li key={workout.id}>
+                    <div><strong>{workout.name}</strong><span className="muted">{formatDateKey(workout.date, { dateStyle: 'medium' })}{workout.time ? ` · ${workout.time}` : ''} · {workout.status === 'in-progress' ? 'In progress' : 'Planned'}</span></div>
+                    <Link className="btn dashboard-home__view-plan" to={`/calendar?workout=${encodeURIComponent(workout.id)}`} aria-label={`Open ${workout.name} in calendar`}>Open</Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="dashboard-home__empty">
+                <p className="muted">No workouts scheduled yet.</p>
+                <Link to="/calendar">Schedule a saved plan</Link>
+              </div>
+            )}
           </section>
         </div>
 
@@ -218,32 +267,6 @@ export default function HomePage() {
             <Link className="btn" to="/progress">Progress analytics</Link>
             <Link className="btn" to="/favorites">Favorites</Link>
           </div>
-        </section>
-
-        <section className="dashboard-home__panel dashboard-home__upcoming" aria-labelledby="dashboard-upcoming-title">
-          <div className="dashboard-section-heading">
-            <div><p className="eyebrow">ON YOUR CALENDAR</p><h2 id="dashboard-upcoming-title">Upcoming workouts</h2></div>
-            <Link to="/calendar">Open calendar</Link>
-          </div>
-          {scheduledWorkouts.some((workout) => workout.status === 'scheduled' || workout.status === 'in-progress') ? (
-            <ul className="dashboard-home__list">
-              {scheduledWorkouts
-                .filter((workout) => workout.status === 'scheduled' || workout.status === 'in-progress')
-                .sort((first, second) => first.date.localeCompare(second.date) || (first.time || '').localeCompare(second.time || ''))
-                .slice(0, 3)
-                .map((workout) => (
-                  <li key={workout.id}>
-                    <div><strong>{workout.name}</strong><span className="muted">{formatDateKey(workout.date, { dateStyle: 'medium' })}{workout.time ? ` · ${workout.time}` : ''} · {workout.status === 'in-progress' ? 'In progress' : 'Planned'}</span></div>
-                    <Link className="btn dashboard-home__view-plan" to={`/calendar?workout=${encodeURIComponent(workout.id)}`} aria-label={`Open ${workout.name} in calendar`}>Open</Link>
-                  </li>
-                ))}
-            </ul>
-          ) : (
-            <div className="dashboard-home__empty">
-              <p className="muted">No workouts scheduled yet.</p>
-              <Link to="/calendar">Schedule a saved plan</Link>
-            </div>
-          )}
         </section>
       </section>
 

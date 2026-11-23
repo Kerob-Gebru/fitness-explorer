@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import ExerciseImage from './ExerciseImage.jsx'
 import FavoriteButton from './FavoriteButton.jsx'
 import WorkoutButton from './WorkoutButton.jsx'
+import { useExerciseDisplayImage } from '../../features/exercises/uploadedExerciseImages.js'
 import { formatLabel } from '../../utils/formatExercise.js'
 
 const FEEDBACK_MS = 2200
@@ -10,6 +11,8 @@ const FEEDBACK_MS = 2200
 export default function ExerciseCard({ exercise, reason, onReplace, replaceLabel = 'Replace in selected plan', replaceDisabled = false }) {
   const [feedback, setFeedback] = useState('')
   const feedbackTimer = useRef(null)
+  const displayImage = useExerciseDisplayImage(exercise)
+  const displayExercise = displayImage === exercise.gifUrl ? exercise : { ...exercise, gifUrl: displayImage }
 
   useEffect(() => () => clearTimeout(feedbackTimer.current), [])
 
@@ -22,7 +25,7 @@ export default function ExerciseCard({ exercise, reason, onReplace, replaceLabel
   return (
     <article className={`card${reason || onReplace ? ' card--alternative' : ''}`}>
       <Link to={`/exercises/${exercise.id}`} className="card__link">
-        <ExerciseImage src={exercise.gifUrl} name={exercise.name} />
+        <ExerciseImage src={displayImage} name={exercise.name} />
         <div className="card__body">
           <h3 className="card__title">{formatLabel(exercise.name)}</h3>
           <ul className="chips">
@@ -34,10 +37,10 @@ export default function ExerciseCard({ exercise, reason, onReplace, replaceLabel
         </div>
       </Link>
       <div className="card__fav">
-        <FavoriteButton exercise={exercise} onToggle={(saved) => announce(saved ? 'Saved to favorites' : 'Removed from favorites')} />
+        <FavoriteButton exercise={displayExercise} onToggle={(saved) => announce(saved ? 'Saved to favorites' : 'Removed from favorites')} />
       </div>
       <div className="card__workout">
-        <WorkoutButton exercise={exercise} compact onToggle={(selected) => announce(selected ? 'Added to your workout' : 'Removed from your workout')} />
+        <WorkoutButton exercise={displayExercise} compact onToggle={(selected) => announce(selected ? 'Added to your workout' : 'Removed from your workout')} />
       </div>
       {onReplace && (
         <div className="card__replace">

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import EmptyState from '../components/common/EmptyState.jsx'
 import ExerciseLearningCenter from '../components/exercises/ExerciseLearningCenter.jsx'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
+import { useExerciseDisplayImage } from '../features/exercises/uploadedExerciseImages.js'
 import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
 import { formatSessionDate } from '../features/workout/workoutProgress.js'
 import { formatLabel } from '../utils/formatExercise.js'
@@ -43,6 +44,10 @@ export default function WorkoutSessionPage() {
   const sessionStatus = session?.status
   const currentIndex = session?.currentExerciseIndex ?? 0
   const exercise = session?.exercises[currentIndex] ?? null
+  const displayExerciseImage = useExerciseDisplayImage(exercise)
+  const displayExercise = exercise && displayExerciseImage && displayExerciseImage !== exercise.gifUrl
+    ? { ...exercise, gifUrl: displayExerciseImage }
+    : exercise
   const restTimer = session?.restTimer ?? null
   const configuredRest = Number(exercise?.config?.rest)
   const defaultRest = Number.isFinite(configuredRest) ? Math.min(600, Math.max(0, configuredRest)) : 60
@@ -191,7 +196,7 @@ export default function WorkoutSessionPage() {
             </div>
             <Link className="btn" to={`/exercises/${exercise.id}`}>Exercise details</Link>
           </div>
-          <ExerciseLearningCenter key={exercise.id} exercise={exercise} compact />
+          <ExerciseLearningCenter key={`${exercise.id}:${displayExercise?.gifUrl || 'default'}`} exercise={displayExercise} compact />
 
           <section className="interactive-sets" aria-labelledby="set-tracking-title">
             <div className="interactive-sets__heading">

@@ -23,7 +23,12 @@ function supportsWebGL() {
   }
 }
 
-export default function FocusFigure({ data, onExploreZone }) {
+export default function FocusFigure({
+  data,
+  onExploreZone,
+  leadContent = null,
+  telemetryContent = null,
+}) {
   const { theme } = useTheme()
   const titleId = useId()
   const [webglAvailable] = useState(supportsWebGL)
@@ -36,20 +41,21 @@ export default function FocusFigure({ data, onExploreZone }) {
 
   const themeName = theme === 'light' ? 'light' : 'dark'
   const selected = FOCUS_ZONES.find((zone) => zone.id === selectedZone) ?? null
-  const selectedCount = selected ? data.counts[selected.id] ?? 0 : 0
+  const activeZone = selected ?? FOCUS_ZONES.find((zone) => zone.id === hoveredZone) ?? null
+  const activeCount = activeZone ? data.counts[activeZone.id] ?? 0 : 0
   const weekLabel = `${formatDateKey(data.weekStartKey, { month: 'short', day: 'numeric' })} – ${formatDateKey(data.weekEndKey, { month: 'short', day: 'numeric' })}`
   const countSummary = useMemo(
     () => FOCUS_ZONES.map((zone) => `${zone.label}: ${data.counts[zone.id] ?? 0}`).join(', '),
     [data.counts],
   )
   const emptyMessage = data.completedExercises === 0
-    ? 'No completed exercises this week yet. Finish a workout and your focus figure will fill in.'
+    ? 'No completed exercises logged this week yet. Finish a workout session to light up trained muscles.'
     : data.mappedExercises === 0
-      ? 'No completed exercises in the six focus groups this week, so no zone is highlighted.'
+      ? 'Completed exercises this week sit outside the six primary muscle zones.'
       : null
-  const statusText = selected
-    ? `${selected.label}: ${selectedCount} completed ${selectedCount === 1 ? 'exercise' : 'exercises'} this week.`
-    : 'Select a muscle group to highlight it and filter Explore.'
+  const statusText = activeZone
+    ? `${activeZone.label}: ${activeCount} completed ${activeCount === 1 ? 'exercise' : 'exercises'} this week.`
+    : 'Select a muscle zone on the body or list to inspect weekly volume and filter Explore.'
   const use3D = webglAvailable && !sceneFailed
   const showReset = use3D && sceneReady
 
@@ -100,101 +106,120 @@ export default function FocusFigure({ data, onExploreZone }) {
   )
 
   return (
-    <section className="focus-figure" aria-labelledby={titleId}>
-      <header className="focus-figure__head">
-        <div>
-          <p className="focus-figure__eyebrow">THIS WEEK</p>
-          <h2 id={titleId}>Muscle focus</h2>
+    <section className="focus-figure studio-hero" aria-labelledby={leadContent ? 'dashboard-title' : titleId}>
+      <div className="studio-hero__main">
+        <div className="studio-hero__left">
+          {leadContent}
+
+          <div className="studio-hero__anatomy" aria-labelledby={titleId}>
+            <header className="focus-figure__head">
+              <div>
+                <p className="focus-figure__eyebrow">THIS WEEK · ANATOMY</p>
+                <h2 id={titleId}>Muscle focus</h2>
+              </div>
+              <div className="focus-figure__meta">
+                <span className="focus-figure__range">{weekLabel}</span>
+                <strong className="focus-figure__total-badge">
+                  {data.mappedExercises} {data.mappedExercises === 1 ? 'exercise' : 'exercises'}
+                </strong>
+              </div>
+            </header>
+
+            {emptyMessage && <p className="focus-figure__empty">{emptyMessage}</p>}
+
+            <FocusFigureLegend
+              counts={data.counts}
+              selectedZone={selectedZone}
+              hoveredZone={hoveredZone}
+              onSelectZone={handleSelectZone}
+              onHoverZone={setHoveredZone}
+            />
+
+            <div className="focus-figure__status-row">
+              <p className="focus-figure__status" role="status" aria-live="polite">{statusText}</p>
+
+              {selected && (
+                <Link
+                  className="focus-figure__explore"
+                  to="/explore"
+                  onClick={() => onExploreZone(selected)}
+                >
+                  <span>Explore {selected.label.toLowerCase()} exercises</span>
+                  <span aria-hidden="true">↗</span>
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
-        <span className="focus-figure__range">{weekLabel}</span>
-      </header>
 
-      {emptyMessage && <p className="focus-figure__empty">{emptyMessage}</p>}
-
-      <div className="focus-figure__body">
-        <div className="focus-figure__stage">
-          <div className="focus-figure__views" role="group" aria-label="Figure view">
-            <button
-              type="button"
-              className="focus-figure__view"
-              aria-pressed={view === 'front'}
-              onClick={() => applyView('front')}
-            >
-              Front
-            </button>
-            <button
-              type="button"
-              className="focus-figure__view"
-              aria-pressed={view === 'back'}
-              onClick={() => applyView('back')}
-            >
-              Back
-            </button>
-            {showReset && (
+        <div className="focus-figure__stage studio-hero__stage">
+          <div className="focus-figure__stage-bar">
+            <span className="focus-figure__stage-label">
+              {activeZone ? `${activeZone.label} focus` : 'Interactive 3D anatomy'}
+            </span>
+            <div className="focus-figure__views" role="group" aria-label="Figure view">
               <button
                 type="button"
                 className="focus-figure__view"
-                aria-pressed={view === 'reset'}
-                onClick={() => applyView('reset')}
+                aria-pressed={view === 'front'}
+                onClick={() => applyView('front')}
               >
-                Reset
+                Front
               </button>
-            )}
+              <button
+                type="button"
+                className="focus-figure__view"
+                aria-pressed={view === 'back'}
+                onClick={() => applyView('back')}
+              >
+                Back
+              </button>
+              {showReset && (
+                <button
+                  type="button"
+                  className="focus-figure__view"
+                  aria-pressed={view === 'reset'}
+                  onClick={() => applyView('reset')}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
           </div>
 
-          {use3D ? (
-            <SceneBoundary fallback={fallback} onError={handleSceneFailure}>
-              <Suspense fallback={fallback}>
-                <FocusFigure3D
-                  theme={themeName}
-                  counts={data.counts}
-                  summary={countSummary}
-                  view={view}
-                  viewNonce={viewNonce}
-                  hoveredZone={hoveredZone}
-                  selectedZone={selectedZone}
-                  onHoverZone={setHoveredZone}
-                  onSelectZone={handleSelectZone}
-                  onClearSelection={() => setSelectedZone(null)}
-                  onDragStart={() => setView('custom')}
-                  onReady={() => setSceneReady(true)}
-                  onFailure={handleSceneFailure}
-                />
-              </Suspense>
-            </SceneBoundary>
-          ) : (
-            fallback
-          )}
-
-          <p className="focus-figure__stage-total">
-            <span>This week</span>
-            <strong>{data.mappedExercises} {data.mappedExercises === 1 ? 'exercise' : 'exercises'}</strong>
-          </p>
-        </div>
-
-        <div className="focus-figure__side">
-          <FocusFigureLegend
-            counts={data.counts}
-            selectedZone={selectedZone}
-            hoveredZone={hoveredZone}
-            onSelectZone={handleSelectZone}
-            onHoverZone={setHoveredZone}
-          />
-
-          <p className="focus-figure__status" role="status" aria-live="polite">{statusText}</p>
-
-          {selected && (
-            <Link
-              className="focus-figure__explore"
-              to="/explore"
-              onClick={() => onExploreZone(selected)}
-            >
-              <span>Explore {selected.label.toLowerCase()} exercises</span>
-              <span aria-hidden="true">↗</span>
-            </Link>
-          )}
+          <div className="focus-figure__canvas-wrap">
+            {use3D ? (
+              <SceneBoundary fallback={fallback} onError={handleSceneFailure}>
+                <Suspense fallback={fallback}>
+                  <FocusFigure3D
+                    theme={themeName}
+                    counts={data.counts}
+                    summary={countSummary}
+                    view={view}
+                    viewNonce={viewNonce}
+                    hoveredZone={hoveredZone}
+                    selectedZone={selectedZone}
+                    onHoverZone={setHoveredZone}
+                    onSelectZone={handleSelectZone}
+                    onClearSelection={() => setSelectedZone(null)}
+                    onDragStart={() => setView('custom')}
+                    onReady={() => setSceneReady(true)}
+                    onFailure={handleSceneFailure}
+                  />
+                </Suspense>
+              </SceneBoundary>
+            ) : (
+              fallback
+            )}
+          </div>
         </div>
       </div>
+
+      {telemetryContent && (
+        <div className="studio-hero__telemetry">
+          {telemetryContent}
+        </div>
+      )}
     </section>
   )
 }

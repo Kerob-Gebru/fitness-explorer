@@ -16,7 +16,8 @@ export default function ExerciseLearningCenter({ exercise, compact = false }) {
   const media = normalizeExerciseMedia(exercise).filter((item) => !failedMedia.includes(item.url))
   const activeMedia = media.find((item) => item.url === selectedMediaUrl) ?? media[0]
   const isMediaLoaded = activeMedia ? loadedMedia.includes(activeMedia.url) : false
-  const animationRequiresOptIn = activeMedia?.type === 'gif' && prefersReducedMotion && motionEnabledUrl !== activeMedia.url
+  const isStaticImageUpload = /\.(jpe?g|png|webp)(\?|$)/i.test(activeMedia?.url || '')
+  const animationRequiresOptIn = activeMedia?.type === 'gif' && !isStaticImageUpload && prefersReducedMotion && motionEnabledUrl !== activeMedia.url
   const instructions = normalizeExerciseInstructions(exercise?.instructions)
   const currentInstruction = instructions[currentStep]
   const primaryMuscles = normalizeExerciseValues(exercise?.target)

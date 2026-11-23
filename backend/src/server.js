@@ -1,7 +1,4 @@
-// This file is the backend's entry point: it configures Express, connects the
-// API routes and static uploads, handles errors, and starts the HTTP server.
-// The imports below provide the web server, security/CORS middleware, runtime
-// settings, file-upload error types, and paths that work in ES modules.
+// Backend HTTP server entry point.
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -15,44 +12,47 @@ import { testDatabaseConnection } from "./config/db.js";
 
 dotenv.config();
 
-// ES modules do not provide __dirname, so derive this file's directory from
-// import.meta.url. The resulting absolute path serves files saved by Multer.
 const currentFile = fileURLToPath(import.meta.url);
 const currentDirectory = path.dirname(currentFile);
 const uploadDirectory = path.resolve(currentDirectory, "../uploads");
 
-// All routes and middleware are registered on this shared Express app.
 const app = express();
 
-// Middleware runs in registration order. Helmet sets protective HTTP headers;
-// this cross-origin resource policy lets the frontend display API-hosted images.
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 
-// Allow browser requests from the configured frontend, falling back to Vite's
-// usual local development address when CLIENT_ORIGIN is not set.
+const configuredOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((item) => item.trim())
+  .filter(Boolean);
+
+const defaultAllowedOrigins = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4173",
+  ...configuredOrigins,
+]);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    origin(origin, callback) {
+      if (!origin || defaultAllowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origin not allowed by CORS."));
+    },
   })
 );
 
-// Parse JSON request bodies so controllers can read submitted values from
-// req.body. This does not parse multipart image uploads; Multer handles those.
 app.use(express.json());
-
-// Serve the stored image files directly at /uploads/<filename>; no controller
-// is needed because Express maps this URL prefix to the uploads directory.
 app.use("/uploads", express.static(uploadDirectory));
-
-// Send exercise API requests to the router, which maps each method/path to
-// the appropriate middleware and controller.
 app.use("/api/exercises", exerciseRoutes);
 
-// A lightweight status endpoint for checking that the HTTP server responds.
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -61,16 +61,18 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Express recognizes this four-argument signature as error middleware. It
-// translates upload validation/size errors into client responses and reports
-// unexpected failures as a generic 500 response without exposing internals.
 app.use((error, req, res, next) => {
-  // Multer has its own error type, including a specific code for oversized files.
   if (error instanceof multer.MulterError) {
     if (error.code === "LIMIT_FILE_SIZE") {
       return res.status(413).json({
         success: false,
         message: "Image is too large. Maximum allowed size is 5 MB.",
+      });
+    }
+    if (error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({
+        success: false,
+        message: "Upload one image file at a time using the 'image' field.",
       });
     }
 
@@ -80,13 +82,18 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // The upload filter raises this message when a file extension or MIME type
-  // is not one of the supported image formats.
   if (
     error.message ===
     "Only JPG, JPEG, PNG, GIF, and WEBP images are allowed."
   ) {
     return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  if (error.message === "Origin not allowed by CORS.") {
+    return res.status(403).json({
       success: false,
       message: error.message,
     });
@@ -100,27 +107,20 @@ app.use((error, req, res, next) => {
   });
 });
 
-// PORT can be changed through the environment; 5000 is the local default.
 const PORT = process.env.PORT || 5000;
 
-// Do not accept API traffic until the database is reachable. If authentication
-// fails, log the startup problem and exit instead of running a broken server.
 async function startServer() {
   try {
-    // authenticate() verifies DB access only; no model synchronization is run.
     await testDatabaseConnection();
-
-    app.listen(PORT, () => {
-      console.log(`Fitness Explorer API running on http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error(
-      "Server startup failed because the database is unavailable."
+  } catch {
+    console.warn(
+      "Database unavailable at startup — running in disk-manifest upload mode for non-DB exercises."
     );
-    process.exit(1);
   }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Fitness Explorer API running on http://0.0.0.0:${PORT}`);
+  });
 }
 
-// Start-up is intentionally asynchronous because the database check must finish
-// before Express begins listening for requests.
 startServer();

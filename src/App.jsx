@@ -1,7 +1,9 @@
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './app/routes.jsx'
 import { ThemeContext } from './features/theme/themeContext.js'
+import { hydrateUploadedImagesFromBackend } from './features/exercises/uploadedExerciseImages.js'
+import { getUploadedImagesManifest } from './services/backendExerciseApi.js'
 
 const getPreferredTheme = () => {
   const savedTheme = localStorage.getItem('fitness-theme')
@@ -25,6 +27,10 @@ function ThemeProvider({ children }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    hydrateUploadedImagesFromBackend(getUploadedImagesManifest)
+  }, [])
+
   return (
     <ThemeProvider>
       <RouterProvider router={router} />

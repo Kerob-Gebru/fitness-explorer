@@ -8,7 +8,12 @@ import * as mockApi from './mockExerciseApi.js'
 import * as liveApi from './liveExerciseApi.js'
 import * as backendApi from './backendExerciseApi.js'
 
-import { ApiRequestError, NotFoundError } from './errors.js'
+import { NotFoundError } from './errors.js'
+import {
+  applyUploadedExerciseImage,
+  hydrateUploadedImagesFromBackend,
+  setUploadedExerciseImage,
+} from '../features/exercises/uploadedExerciseImages.js'
 
 // Select the correct data source.
 const api = USE_MOCK_DATA
@@ -17,34 +22,51 @@ const api = USE_MOCK_DATA
     ? backendApi
     : liveApi
 
+async function ensureUploadedImagesHydrated() {
+  await hydrateUploadedImagesFromBackend(() => backendApi.getUploadedImagesManifest())
+}
+
 // Get exercises using the selected data source.
-export function getExercises(filters = {}) {
-  return api.getExercises(filters)
+export async function getExercises(filters = {}) {
+  const [exercises] = await Promise.all([
+    api.getExercises(filters),
+    ensureUploadedImagesHydrated(),
+  ])
+  return Array.isArray(exercises) ? exercises.map(applyUploadedExerciseImage) : []
 }
 
 // Always retrieve local demo exercises when explicitly requested.
-export function getLocalExercises(filters = {}) {
-  return mockApi.getExercises(filters)
+export async function getLocalExercises(filters = {}) {
+  const [exercises] = await Promise.all([
+    mockApi.getExercises(filters),
+    ensureUploadedImagesHydrated(),
+  ])
+  return Array.isArray(exercises) ? exercises.map(applyUploadedExerciseImage) : []
 }
 
 // Get one exercise by ID.
-export function getExerciseById(id) {
+export async function getExerciseById(id) {
   const exerciseId = String(id)
 
   // Demo exercises always come from the local demo library.
   if (exerciseId.startsWith('demo-')) {
+    await ensureUploadedImagesHydrated()
     const localExercise = mockApi.findLocalExerciseById(exerciseId)
 
-    return localExercise
-      ? Promise.resolve(localExercise)
-      : Promise.reject(
-          new NotFoundError(
-            'This sample exercise is no longer available in the local exercise library.',
-          ),
-        )
+    if (!localExercise) {
+      throw new NotFoundError(
+        'This sample exercise is no longer available in the local exercise library.',
+      )
+    }
+
+    return applyUploadedExerciseImage(localExercise)
   }
 
-  return api.getExerciseById(id)
+  const [exercise] = await Promise.all([
+    api.getExerciseById(id),
+    ensureUploadedImagesHydrated(),
+  ])
+  return applyUploadedExerciseImage(exercise)
 }
 
 // Get filter options.
@@ -52,10 +74,8 @@ export function getFilterOptions() {
   return api.getFilterOptions()
 }
 
-export function uploadExerciseImage(id, file) {
-  if (!USE_BACKEND_DATA) {
-    return Promise.reject(new ApiRequestError('Image uploads are only available when the backend data source is selected.'))
-  }
-
-  return backendApi.uploadExerciseImage(id, file)
+export async function uploadExerciseImage(id, file, exercise = null) {
+  const uploaded = await backendApi.uploadExerciseImage(id, file, exercise)
+  setUploadedExerciseImage(exercise ?? { id }, uploaded.imageUrl, uploaded.source)
+  return uploaded
 }

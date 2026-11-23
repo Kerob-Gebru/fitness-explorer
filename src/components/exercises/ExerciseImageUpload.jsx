@@ -6,8 +6,8 @@ import { useWorkoutStore } from '../../features/workout/useWorkoutStore.js'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ALLOWED_TYPES = {
-  '.jpg': ['image/jpeg', 'image/jpg'],
-  '.jpeg': ['image/jpeg', 'image/jpg'],
+  '.jpg': ['image/jpeg', 'image/jpg', 'image/pjpeg'],
+  '.jpeg': ['image/jpeg', 'image/jpg', 'image/pjpeg'],
   '.png': ['image/png'],
   '.gif': ['image/gif'],
   '.webp': ['image/webp'],
@@ -19,7 +19,8 @@ function formatFileSize(size) {
 }
 
 function getValidationError(file) {
-  const extension = file.name.slice(file.name.lastIndexOf('.')).toLocaleLowerCase()
+  const dotIndex = file.name.lastIndexOf('.')
+  const extension = dotIndex >= 0 ? file.name.slice(dotIndex).toLocaleLowerCase() : ''
   const acceptedTypes = ALLOWED_TYPES[extension]
 
   if (!acceptedTypes || (file.type && !acceptedTypes.includes(file.type.toLocaleLowerCase()))) {
@@ -30,7 +31,13 @@ function getValidationError(file) {
   return ''
 }
 
-export default function ExerciseImageUpload({ exerciseId, onImageUploaded }) {
+export default function ExerciseImageUpload({
+  exercise = null,
+  exerciseId,
+  hasUploadedImage = false,
+  onImageUploaded,
+}) {
+  const resolvedId = String(exercise?.id ?? exerciseId ?? '')
   const inputRef = useRef(null)
   const uploadLockRef = useRef(false)
   const [selectedFile, setSelectedFile] = useState(null)
@@ -80,7 +87,7 @@ export default function ExerciseImageUpload({ exerciseId, onImageUploaded }) {
 
   async function submitUpload(event) {
     event.preventDefault()
-    if (!selectedFile || uploadLockRef.current) return
+    if (!selectedFile || !resolvedId || uploadLockRef.current) return
 
     uploadLockRef.current = true
     setUploading(true)
@@ -88,11 +95,11 @@ export default function ExerciseImageUpload({ exerciseId, onImageUploaded }) {
     setSuccess('')
 
     try {
-      const uploaded = await uploadExerciseImage(exerciseId, selectedFile)
-      updateFavoriteImage(exerciseId, uploaded.imageUrl)
-      updateRecentImage(exerciseId, uploaded.imageUrl)
-      updateWorkoutImage(exerciseId, uploaded.imageUrl)
-      onImageUploaded(uploaded.imageUrl)
+      const uploaded = await uploadExerciseImage(resolvedId, selectedFile, exercise)
+      updateFavoriteImage(resolvedId, uploaded.imageUrl)
+      updateRecentImage(resolvedId, uploaded.imageUrl)
+      updateWorkoutImage(resolvedId, uploaded.imageUrl)
+      onImageUploaded?.(uploaded.imageUrl, uploaded)
       setSelectedFile(null)
       setPreviewUrl('')
       setSuccess('Image uploaded successfully.')
@@ -110,12 +117,13 @@ export default function ExerciseImageUpload({ exerciseId, onImageUploaded }) {
         <div>
           <p className="eyebrow">PERSONALIZE THIS EXERCISE</p>
           <h2 id="exercise-image-upload-title">Exercise image</h2>
-          <p className="muted">Choose a JPG, PNG, GIF, or WEBP image up to 5 MB.</p>
+          <p className="muted">Choose a JPG, JPEG, PNG, GIF, or WEBP image up to 5 MB.</p>
         </div>
         <input
           ref={inputRef}
           className="visually-hidden"
           type="file"
+          multiple={false}
           accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
           onChange={chooseFile}
           aria-label="Choose an exercise image"
@@ -127,7 +135,7 @@ export default function ExerciseImageUpload({ exerciseId, onImageUploaded }) {
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
         >
-          {selectedFile ? 'Choose another image' : 'Upload Image'}
+          {selectedFile ? 'Choose another image' : hasUploadedImage ? 'Replace image' : 'Upload Image'}
         </button>
       </div>
 

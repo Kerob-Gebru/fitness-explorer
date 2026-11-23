@@ -5,6 +5,10 @@ import WorkoutButton from '../components/exercises/WorkoutButton.jsx'
 import RelatedExercises from '../components/exercises/RelatedExercises.jsx'
 import { useEffect, useState } from 'react'
 import { useRecentStore } from '../features/recent/useRecentStore.js'
+import {
+  useExerciseDisplayImage,
+  useHasUploadedExerciseImage,
+} from '../features/exercises/uploadedExerciseImages.js'
 import ExerciseImageUpload from '../components/exercises/ExerciseImageUpload.jsx'
 import Loader from '../components/common/Loader.jsx'
 import ErrorMessage from '../components/common/ErrorMessage.jsx'
@@ -18,9 +22,15 @@ export default function ExerciseDetailsPage() {
   const { id } = useParams()
   const [uploadedImage, setUploadedImage] = useState(null)
   const { data: exercise, loading, error, retry } = useAsyncData(() => getExerciseById(id), [id])
+  const storedImage = useExerciseDisplayImage(exercise)
+  const hasUploadedImage = useHasUploadedExerciseImage(exercise)
   useDocumentTitle(exercise ? formatLabel(exercise.name) : 'Exercise')
   const rememberExercise = useRecentStore((state) => state.rememberExercise)
-  useEffect(() => { if (exercise) rememberExercise(exercise) }, [exercise, rememberExercise])
+  useEffect(() => {
+    if (!exercise) return
+    const nextUrl = storedImage || exercise.gifUrl
+    rememberExercise(nextUrl === exercise.gifUrl ? exercise : { ...exercise, gifUrl: nextUrl })
+  }, [exercise, storedImage, rememberExercise])
 
   if (loading) return <Loader label="Loading exercise..." />
 
@@ -37,7 +47,9 @@ export default function ExerciseDetailsPage() {
   if (error) return <ErrorMessage error={error} onRetry={retry} />
   if (!exercise) return null
 
-  const currentImage = uploadedImage?.exerciseId === String(exercise.id) ? uploadedImage.url : exercise.gifUrl
+  const currentImage = uploadedImage?.exerciseId === String(exercise.id)
+    ? uploadedImage.url
+    : (storedImage || exercise.gifUrl)
   const displayExercise = currentImage === exercise.gifUrl ? exercise : { ...exercise, gifUrl: currentImage }
 
   return (
@@ -55,21 +67,22 @@ export default function ExerciseDetailsPage() {
           {exercise.source === 'mock' && <span className="chip chip--accent">Sample exercise</span>}
         </div>
         <div className="details__actions">
-          <FavoriteButton exercise={exercise} variant="full" />
-          <WorkoutButton exercise={exercise} />
+          <FavoriteButton exercise={displayExercise} variant="full" />
+          <WorkoutButton exercise={displayExercise} />
         </div>
       </header>
 
-      {exercise.source === 'backend' && (
-        <ExerciseImageUpload
-          exerciseId={exercise.id}
-          onImageUploaded={(url) => setUploadedImage({ exerciseId: String(exercise.id), url })}
-        />
-      )}
+      <ExerciseImageUpload
+        key={String(exercise.id)}
+        exercise={displayExercise}
+        exerciseId={exercise.id}
+        hasUploadedImage={hasUploadedImage || uploadedImage?.exerciseId === String(exercise.id)}
+        onImageUploaded={(url) => setUploadedImage({ exerciseId: String(exercise.id), url })}
+      />
 
-      <ExerciseLearningCenter key={exercise.id} exercise={displayExercise} />
+      <ExerciseLearningCenter key={`${exercise.id}:${displayExercise.gifUrl || 'default'}`} exercise={displayExercise} />
 
-      <RelatedExercises exercise={exercise} />
+      <RelatedExercises exercise={displayExercise} />
     </article>
   )
 }

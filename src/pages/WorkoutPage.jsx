@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ExerciseImage from '../components/exercises/ExerciseImage.jsx'
 import EmptyState from '../components/common/EmptyState.jsx'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
+import { getUploadedImageFromMap, useUploadedImagesStore } from '../features/exercises/uploadedExerciseImages.js'
 import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
 import { calculateWorkoutProgress, formatSessionDate } from '../features/workout/workoutProgress.js'
 import { formatLabel } from '../utils/formatExercise.js'
@@ -19,6 +20,7 @@ export default function WorkoutPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const exercises = useWorkoutStore((state) => state.exercises)
+  const uploadedImages = useUploadedImagesStore((state) => state.images)
   const settings = useWorkoutStore((state) => state.settings)
   const plans = useWorkoutStore((state) => state.plans)
   const history = useWorkoutStore((state) => state.history)
@@ -258,7 +260,7 @@ export default function WorkoutPage() {
                     <div className="dashboard-exercise__top">
                       <button className={`complete-toggle ${isCompleted ? 'complete-toggle--checked' : ''}`} type="button" onClick={() => toggleCompleted(exercise.id)} aria-label={isCompleted ? 'Mark builder exercise incomplete' : 'Mark builder exercise complete'}>{isCompleted ? '✓' : ''}</button>
                       <span className="dashboard-exercise__number">{String(index + 1).padStart(2, '0')}</span>
-                      <ExerciseImage src={exercise.gifUrl} name={exercise.name} className="dashboard-exercise__image" />
+                      <ExerciseImage src={getUploadedImageFromMap(uploadedImages, exercise) || exercise.gifUrl} name={exercise.name} className="dashboard-exercise__image" />
                       <div className="dashboard-exercise__info"><h3>{formatLabel(exercise.name)}</h3><p>{formatLabel(exercise.target)} <span>·</span> {formatLabel(exercise.equipment)}</p><Link to={`/exercises/${exercise.id}`}>View instructions ↗</Link></div>
                       <div className="exercise-reorder"><button type="button" className="icon-btn" onClick={() => moveExercise(exercise.id, -1)} disabled={index === 0} aria-label="Move exercise up">↑</button><button type="button" className="icon-btn" onClick={() => moveExercise(exercise.id, 1)} disabled={index === exercises.length - 1} aria-label="Move exercise down">↓</button></div>
                       <button type="button" className="remove-icon" onClick={() => removeExercise(exercise.id)} aria-label={`Remove ${exercise.name}`}>×</button>

@@ -1,9 +1,27 @@
 
 import { ApiRequestError, NotFoundError } from './errors.js'
 
-const BASE_URL = (
-  import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:5000/api'
-).trim()
+const RAW_BASE_URL = (import.meta.env.VITE_BACKEND_API_URL || '/api').trim()
+const BASE_URL = RAW_BASE_URL.endsWith('/') && RAW_BASE_URL.length > 1
+  ? RAW_BASE_URL.slice(0, -1)
+  : RAW_BASE_URL
+
+function resolveBackendUrl(pathOrUrl) {
+  if (typeof pathOrUrl !== 'string' || !pathOrUrl.trim()) return null
+  const value = pathOrUrl.trim()
+
+  try {
+    if (/^https?:\/\//i.test(BASE_URL)) {
+      return new URL(value, BASE_URL).toString()
+    }
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return new URL(value, window.location.origin).toString()
+    }
+    return value
+  } catch {
+    return null
+  }
+}
 
 // Convert backend database records into the format
 // already expected by the React frontend.
@@ -18,9 +36,7 @@ function normalizeExercise(raw) {
     instructions: raw.instructions
       ? [raw.instructions]
       : [],
-    gifUrl: raw.gif_url
-  ? new URL(raw.gif_url, BASE_URL).toString()
-  : null,
+    gifUrl: resolveBackendUrl(raw.gif_url),
     imageUrl: null,
     videoUrl: null,
     source: 'backend',
@@ -39,7 +55,7 @@ async function request(path) {
     })
   } catch {
     throw new ApiRequestError(
-      'Could not connect to your backend. Make sure the backend server is running.',
+      'Could not connect to the upload server. Make sure the backend server is running.',
     )
   }
 
@@ -104,10 +120,20 @@ export async function getExerciseById(id) {
   return normalizeExercise(result.data)
 }
 
+export async function getUploadedImagesManifest() {
+  const result = await request('/exercises/uploads/manifest')
+  return result?.success && result.data && typeof result.data === 'object' ? result.data : {}
+}
+
 // Upload one exercise image without setting Content-Type so the browser adds
 // the multipart boundary for FormData.
-export async function uploadExerciseImage(id, file) {
+export async function uploadExerciseImage(id, file, exercise = null) {
   const formData = new FormData()
+  if (exercise?.source) formData.append('source', String(exercise.source))
+  if (exercise?.name) formData.append('name', String(exercise.name))
+  if (exercise?.bodyPart) formData.append('bodyPart', String(exercise.bodyPart))
+  if (exercise?.target) formData.append('target', String(exercise.target))
+  if (exercise?.equipment) formData.append('equipment', String(exercise.equipment))
   formData.append('image', file)
 
   let response
@@ -121,7 +147,7 @@ export async function uploadExerciseImage(id, file) {
     })
   } catch {
     throw new ApiRequestError(
-      'Could not connect to your backend. Make sure the backend server is running.',
+      'Could not connect to the upload server. Make sure the server is running and try again.',
     )
   }
 
@@ -129,19 +155,25 @@ export async function uploadExerciseImage(id, file) {
   try {
     result = await response.json()
   } catch {
-    throw new ApiRequestError('Invalid JSON response from backend.', response.status)
+    throw new ApiRequestError(
+      response.status === 413
+        ? 'Image is too large. Maximum allowed size is 5 MB.'
+        : `Upload failed with an unexpected server response (${response.status}).`,
+      response.status,
+    )
   }
 
-  if (!response.ok || !result.success || typeof result.data?.imageUrl !== 'string') {
+  const resolvedUrl = resolveBackendUrl(result?.data?.imageUrl)
+  if (!response.ok || !result?.success || !resolvedUrl) {
     throw new ApiRequestError(
-      result.message || `Image upload failed (${response.status}).`,
+      result?.message || `Image upload failed (${response.status}).`,
       response.status,
     )
   }
 
   return {
     ...result.data,
-    imageUrl: new URL(result.data.imageUrl, BASE_URL).toString(),
+    imageUrl: resolvedUrl,
   }
 }
 

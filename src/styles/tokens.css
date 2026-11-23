@@ -45,26 +45,25 @@ html[data-theme='dark'] {
   color-scheme: dark;
 
   /* Background and surfaces */
-  --color-bg: #171C24;
-  --color-surface: #252D38;
-  --color-surface-secondary: #1D2430;
-  --color-surface-elevated: #2C3542;
-  --color-nav-bg: rgba(23, 28, 36, 0.92);
-  --color-nav-shadow: rgba(0, 0, 0, 0.4);
-  --color-input-bg: #1D2430;
-  --color-input-border: #333D4A;
-  --color-input-placeholder: #8B95A1;
+  --color-bg: #0D0F13;
+  --color-surface: #141820;
+  --color-surface-secondary: #101319;
+  --color-surface-elevated: #1B202B;
+  --color-nav-bg: rgba(13, 15, 19, 0.92);
+  --color-nav-shadow: rgba(0, 0, 0, 0.5);
+  --color-input-bg: #101319;
+  --color-input-border: #28303D;
+  --color-input-placeholder: #8A94A3;
 
   /* Text */
-  /* Both greys clear 4.5:1 on the base surface; secondary also clears it on
-     the elevated tile fill (#2C3542) used by stat and goal cards. */
+  /* Both greys clear 4.5:1 on the base and elevated charcoal surfaces. */
   --color-text: #F4F5F2;
-  --color-text-secondary: #98A2AE;
-  --color-muted: #8C96A2;
+  --color-text-secondary: #9CA6B4;
+  --color-muted: #8E98A7;
 
   /* Borders */
-  --color-border: #333D4A;
-  --color-border-strong: #46515F;
+  --color-border: #252C38;
+  --color-border-strong: #394354;
 
   /* Accent and actions */
   --color-accent: #FF5F00;

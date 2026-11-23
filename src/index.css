@@ -2433,7 +2433,8 @@ html[data-theme='dark'] .demo-banner {
 /* ---------------------------------------------------------------------------
    Home dashboard
    Scoped to .dashboard-home and appended after the legacy dashboard rules so
-   the restructured Home page can be polished without touching shared styles.
+   the 3D Studio Hero, integrated telemetry, and training pipeline are cleanly
+   styled across dark (default) and light themes without touching shared pages.
 --------------------------------------------------------------------------- */
 .dashboard-home {
   --home-panel-bg: var(--color-surface);
@@ -2453,94 +2454,246 @@ html[data-theme='dark'] .demo-banner {
 
 .dashboard-home > * { min-width: 0; }
 
-.dashboard-home .dashboard-home__welcome {
-  position: relative;
-  isolation: isolate;
-  min-height: 260px;
-  align-items: flex-start;
-  gap: clamp(1rem, 2.5vw, 2rem);
-  padding: clamp(1.4rem, 3.5vw, 2.6rem);
-  overflow: hidden;
-  border: 1px solid var(--home-border);
-  border-radius: var(--home-radius);
-  background:
-    radial-gradient(circle at 88% 0%, rgba(255, 95, 0, 0.16), transparent 42%),
-    var(--home-panel-bg);
-  color: var(--home-text);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+/* Studio Hero Lead (inside .studio-hero__left) */
+.dashboard-home .studio-lead {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.dashboard-home .dashboard-home__welcome::after {
-  right: -7rem;
-  bottom: -11rem;
-  width: clamp(220px, 30vw, 380px);
-  border: 0;
-  background: radial-gradient(circle, rgba(255, 95, 0, 0.14), transparent 68%);
-  opacity: 1;
+.dashboard-home .studio-lead__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
 }
 
-.dashboard-home .dashboard-home__welcome > div:first-child { max-width: min(72%, 620px); }
-
-.dashboard-home .dashboard-home__welcome h1 {
-  max-width: 16ch;
-  margin-bottom: 0.75rem;
-  font-size: clamp(2.4rem, 4.2vw, 4.1rem);
-  line-height: 0.99;
-  letter-spacing: -0.055em;
-}
-
-.dashboard-home .dashboard-home__welcome .eyebrow { color: var(--home-accent); }
-
-.dashboard-home .dashboard-home__welcome .muted {
-  max-width: 52ch;
-  color: var(--home-muted);
-  font-size: 0.98rem;
+.dashboard-home .studio-lead__top .eyebrow {
+  margin: 0;
+  color: var(--home-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
 }
 
 .dashboard-home .dashboard-home__date {
   flex: 0 0 auto;
-  align-self: flex-start;
-  padding: 0.42rem 0.75rem;
+  padding: 0.32rem 0.68rem;
   border: 1px solid var(--home-border);
   border-radius: 999px;
-  background: var(--home-panel-alt);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--home-muted);
-  font-size: 0.76rem;
-  font-weight: 650;
+  font-size: 0.73rem;
+  font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
-.dashboard-home .dashboard-home__hero-actions { gap: 0.6rem; margin-top: 1.3rem; }
+html[data-theme='light'] .dashboard-home .dashboard-home__date {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.dashboard-home .studio-lead h1 {
+  max-width: 15ch;
+  margin: 0;
+  color: var(--home-text);
+  font-size: clamp(2.2rem, 3.6vw, 3.45rem);
+  line-height: 1.01;
+  letter-spacing: -0.048em;
+}
+
+.dashboard-home .studio-lead__subtitle {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--home-muted);
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.dashboard-home .dashboard-home__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
 
 .dashboard-home .dashboard-home__hero-actions .btn {
-  min-height: 46px;
+  min-height: 44px;
+  padding-inline: 1.05rem;
   border: 1px solid var(--home-border);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--home-text);
   font-weight: 750;
+}
+
+html[data-theme='light'] .dashboard-home .dashboard-home__hero-actions .btn:not(.btn--primary) {
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .dashboard-home .dashboard-home__hero-actions .btn--primary {
   border-color: var(--home-accent);
   background: var(--home-accent);
   color: var(--accent-ink);
-  box-shadow: 0 10px 24px rgba(255, 95, 0, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 24px rgba(255, 95, 0, 0.22);
 }
 
-.dashboard-home .dashboard-home__hero-actions .btn--primary:hover:not(:disabled) {
-  border-color: var(--accent-hover);
-  background: var(--accent-hover);
-  color: var(--accent-ink);
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-home .dashboard-home__hero-actions .btn--primary:hover:not(:disabled) {
+    border-color: var(--accent-hover);
+    background: var(--accent-hover);
+    color: var(--accent-ink);
+  }
+
+  .dashboard-home .dashboard-home__hero-actions .btn:not(.btn--primary):hover:not(:disabled) {
+    border-color: var(--home-accent);
+    background: rgba(255, 95, 0, 0.08);
+    color: var(--home-accent);
+  }
 }
 
-.dashboard-home .dashboard-home__hero-actions .btn:not(.btn--primary):hover:not(:disabled) {
-  border-color: var(--home-accent);
+/* Studio Telemetry Bar (integrated inside .studio-hero__telemetry) */
+.dashboard-home .studio-telemetry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  align-items: stretch;
+  gap: clamp(1rem, 2vw, 1.65rem);
+  padding: clamp(1rem, 2.2vw, 1.4rem) clamp(1.25rem, 3vw, 2.25rem);
+  min-width: 0;
+}
+
+.dashboard-home .studio-telemetry__overview,
+.dashboard-home .studio-telemetry__weekly {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.dashboard-home .studio-telemetry__weekly {
+  padding-left: clamp(1rem, 2vw, 1.65rem);
+  border-left: 1px solid var(--home-border);
+}
+
+.dashboard-home .studio-telemetry__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+}
+
+.dashboard-home .studio-telemetry__head .eyebrow {
+  margin: 0 0 0.18rem;
   color: var(--home-accent);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
 }
 
-.dashboard-home .dashboard-home__overview,
-.dashboard-home .dashboard-home__weekly,
+.dashboard-home .studio-telemetry__head h2 {
+  margin: 0;
+  color: var(--home-text);
+  font-size: 1.06rem;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.dashboard-home .studio-telemetry__summary,
+.dashboard-home .studio-telemetry__weekly .studio-telemetry__head > span {
+  margin: 0;
+  color: var(--home-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-home .studio-telemetry__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+html[data-theme='light'] .dashboard-home .studio-telemetry__metrics {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.dashboard-home .studio-metric {
+  display: grid;
+  align-content: space-between;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.78rem 0.85rem;
+}
+
+.dashboard-home .studio-metric + .studio-metric {
+  border-left: 1px solid var(--home-border);
+}
+
+.dashboard-home .studio-metric dt {
+  margin: 0;
+  color: var(--home-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.dashboard-home .studio-metric dd {
+  margin: 0;
+  color: var(--home-text);
+  font-size: clamp(1.38rem, 2vw, 1.78rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-home .studio-metric dd span {
+  color: var(--home-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.dashboard-home .studio-telemetry__chart.activity-chart {
+  height: 112px;
+  gap: clamp(0.3rem, 0.85vw, 0.55rem);
+  margin-top: 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--home-border);
+}
+
+.dashboard-home .studio-telemetry__chart .activity-chart__day {
+  color: var(--home-muted);
+}
+
+.dashboard-home .studio-telemetry__chart .activity-chart__count {
+  color: var(--home-text);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-home .studio-telemetry__chart .activity-chart__track {
+  width: min(100%, 34px);
+  background: var(--home-panel-alt);
+}
+
+.dashboard-home .studio-telemetry__chart .activity-chart__track > span {
+  background: var(--home-accent);
+}
+
+.dashboard-home .studio-telemetry__chart .activity-chart__label {
+  font-size: 0.7rem;
+}
+
+/* Dashboard Supporting Panels & Pipeline */
 .dashboard-home .dashboard-home__panel,
 .dashboard-home .dashboard-home__quick {
   padding: clamp(1rem, 2.2vw, 1.5rem);
@@ -2553,27 +2706,50 @@ html[data-theme='dark'] .demo-banner {
 
 .dashboard-home .dashboard-section-heading { gap: 0.75rem; margin-bottom: 0.9rem; }
 
-.dashboard-home .dashboard-home__summary {
-  max-width: 44ch;
-  margin: 0;
-  color: var(--home-muted);
-  font-size: 0.82rem;
-  text-align: right;
-}
-
-.dashboard-home .dashboard-home__stats {
+.dashboard-home .dashboard-home__goals {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: stretch;
+  gap: var(--home-gap);
 }
 
-.dashboard-home .dashboard-home__stats .dashboard-stat,
+.dashboard-home .dashboard-home__goals > .goal-panel {
+  border: 1px solid var(--home-border);
+  border-radius: var(--home-radius);
+  background: var(--home-panel-bg);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-home .goal-panel .goal-card {
+  border-color: var(--home-border);
+  background: var(--home-panel-alt);
+}
+
+.dashboard-home .goal-panel .goal-card--achieved { border-color: rgba(37, 139, 99, 0.55); }
+
+.dashboard-home .goal-panel .goal-card__heading p,
+.dashboard-home .goal-panel .goal-card__status { color: var(--home-muted); }
+
+.dashboard-home .goal-panel .goal-progress { background: var(--color-surface-elevated); }
+
+.dashboard-home .dashboard-home__streak {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-home .dashboard-home__streak-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.2rem 0.7rem;
-  min-height: 102px;
+  min-height: 96px;
   padding: 1rem;
   border: 1px solid var(--home-border);
   border-radius: 14px;
@@ -2582,31 +2758,26 @@ html[data-theme='dark'] .demo-banner {
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
-.dashboard-home .dashboard-home__stats .dashboard-stat:nth-child(1),
-.dashboard-home .dashboard-home__stats .dashboard-stat:nth-child(2) {
-  border: 1px solid var(--home-border);
-  background: var(--home-card-bg);
-  color: var(--home-text);
-}
-
-.dashboard-home .dashboard-home__stats .dashboard-stat:hover,
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover {
   border-color: var(--home-border-strong);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 
-.dashboard-home .dashboard-home__stats .dashboard-stat__icon,
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat__icon {
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: rgba(255, 95, 0, 0.12);
+  background: rgba(255, 95, 0, 0.14);
   color: var(--home-accent);
   font-size: 1.05rem;
 }
 
-.dashboard-home .dashboard-home__stats .dashboard-stat strong,
+.dashboard-home .dashboard-home__streak-stats .dashboard-stat:last-child .dashboard-stat__icon {
+  background: rgba(37, 139, 99, 0.14);
+  color: var(--success);
+}
+
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat strong {
   color: var(--home-text);
   font-size: clamp(1.6rem, 2.4vw, 2.1rem);
@@ -2614,7 +2785,6 @@ html[data-theme='dark'] .demo-banner {
   font-variant-numeric: tabular-nums;
 }
 
-.dashboard-home .dashboard-home__stats .dashboard-stat p,
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat p {
   margin: 0;
   color: var(--home-muted);
@@ -2622,47 +2792,15 @@ html[data-theme='dark'] .demo-banner {
   font-weight: 650;
 }
 
-.dashboard-home .dashboard-home__stats .dashboard-stat small,
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat small {
   color: var(--home-muted);
   font-size: 0.75rem;
   letter-spacing: 0;
 }
 
-.dashboard-home .dashboard-home__weekly .eyebrow { color: var(--home-accent); }
-
-.dashboard-home .dashboard-home__weekly h2 { color: var(--home-text); }
-
-.dashboard-home .dashboard-home__weekly .muted,
-.dashboard-home .dashboard-home__weekly .dashboard-section-heading > span {
-  color: var(--home-muted);
-  font-size: 0.8rem;
-}
-
-.dashboard-home .dashboard-home__weekly .activity-chart {
-  height: 170px;
-  gap: clamp(0.3rem, 1vw, 0.65rem);
-  margin-top: 0.35rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--home-border);
-}
-
-.dashboard-home .dashboard-home__weekly .activity-chart__day { color: var(--home-muted); }
-
-.dashboard-home .dashboard-home__weekly .activity-chart__count {
-  color: var(--home-text);
-  font-size: 0.78rem;
-}
-
-.dashboard-home .dashboard-home__weekly .activity-chart__track { background: var(--home-panel-alt); }
-
-.dashboard-home .dashboard-home__weekly .activity-chart__track > span { background: var(--home-accent); }
-
-.dashboard-home .dashboard-home__weekly .activity-chart__label { font-size: 0.72rem; }
-
-.dashboard-home .dashboard-home__lower {
+.dashboard-home .dashboard-home__pipeline {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--home-gap);
 }
 
@@ -2694,7 +2832,7 @@ html[data-theme='dark'] .demo-banner {
   border-top: 1px solid var(--home-border);
 }
 
-.dashboard-home .dashboard-home__list li > div { gap: 0.15rem; }
+.dashboard-home .dashboard-home__list li > div { gap: 0.15rem; min-width: 0; }
 
 .dashboard-home .dashboard-home__list strong {
   color: var(--home-text);
@@ -2709,7 +2847,7 @@ html[data-theme='dark'] .demo-banner {
   font-size: 0.77rem;
 }
 
-.dashboard-home .dashboard-home__session-meta { max-width: 45%; }
+.dashboard-home .dashboard-home__session-meta { max-width: 45%; text-align: right; }
 
 .dashboard-home .dashboard-home__view-plan {
   min-height: 34px;
@@ -2756,56 +2894,6 @@ html[data-theme='dark'] .demo-banner {
   text-underline-offset: 0.2em;
 }
 
-.dashboard-home .dashboard-home__goals {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  align-items: stretch;
-  gap: var(--home-gap);
-}
-
-.dashboard-home .dashboard-home__goals > .goal-panel {
-  border: 1px solid var(--home-border);
-  border-radius: var(--home-radius);
-  background: var(--home-panel-bg);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
-}
-
-.dashboard-home .goal-panel .goal-card {
-  border-color: var(--home-border);
-  background: var(--home-panel-alt);
-}
-
-.dashboard-home .goal-panel .goal-card--achieved { border-color: rgba(37, 139, 99, 0.55); }
-
-.dashboard-home .goal-panel .goal-card__heading p,
-.dashboard-home .goal-panel .goal-card__status { color: var(--home-muted); }
-
-.dashboard-home .goal-panel .goal-progress { background: var(--color-surface-elevated); }
-
-.dashboard-home .dashboard-home__streak {
-  display: flex;
-  flex-direction: column;
-}
-
-.dashboard-home .dashboard-home__streak-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: auto;
-}
-
-.dashboard-home .dashboard-home__streak-stats .dashboard-stat { min-height: 96px; }
-
-.dashboard-home .dashboard-home__streak-stats .dashboard-stat:first-child .dashboard-stat__icon {
-  background: rgba(255, 95, 0, 0.14);
-  color: var(--home-accent);
-}
-
-.dashboard-home .dashboard-home__streak-stats .dashboard-stat:last-child .dashboard-stat__icon {
-  background: rgba(37, 139, 99, 0.14);
-  color: var(--success);
-}
-
 .dashboard-home .dashboard-home__quick {
   display: grid;
   gap: 0.9rem;
@@ -2850,15 +2938,6 @@ html[data-theme='dark'] .demo-banner {
   outline-offset: 2px;
 }
 
-html[data-theme='dark'] .dashboard-home .dashboard-home__welcome {
-  background:
-    radial-gradient(circle at 88% 0%, rgba(255, 95, 0, 0.2), transparent 44%),
-    var(--home-panel-bg);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
-}
-
-html[data-theme='dark'] .dashboard-home .dashboard-home__overview,
-html[data-theme='dark'] .dashboard-home .dashboard-home__weekly,
 html[data-theme='dark'] .dashboard-home .dashboard-home__panel,
 html[data-theme='dark'] .dashboard-home .dashboard-home__quick,
 html[data-theme='dark'] .dashboard-home .dashboard-home__goals > .goal-panel {
@@ -2879,46 +2958,59 @@ html[data-theme='dark'] .dashboard-home .dashboard-home__actions .btn:first-chil
   color: var(--home-accent);
 }
 
-@media (max-width: 1100px) {
-  .dashboard-home .dashboard-home__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1120px) {
+  .dashboard-home .dashboard-home__pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-home .dashboard-home__pipeline > :last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 900px) {
-  .dashboard-home .dashboard-home__welcome {
-    flex-direction: column;
-    align-items: flex-start;
+  .dashboard-home .studio-telemetry {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.1rem 1.25rem;
   }
 
-  .dashboard-home .dashboard-home__welcome > div:first-child { max-width: 100%; }
+  .dashboard-home .studio-telemetry__weekly {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--home-border);
+  }
 
-  .dashboard-home .dashboard-home__date { align-self: flex-start; }
+  .dashboard-home .dashboard-home__goals,
+  .dashboard-home .dashboard-home__pipeline {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-  .dashboard-home .dashboard-home__lower,
-  .dashboard-home .dashboard-home__goals { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-home .dashboard-home__pipeline > :last-child {
+    grid-column: auto;
+  }
 
   .dashboard-home .dashboard-home__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
-  .dashboard-home .dashboard-home__welcome {
-    min-height: 0;
-    padding: 1.35rem;
-    border-radius: 16px;
+  .dashboard-home .studio-lead h1 { font-size: clamp(2rem, 6.8vw, 2.85rem); }
+
+  .dashboard-home .studio-telemetry__chart.activity-chart { height: 108px; }
+}
+
+@media (max-width: 600px) {
+  .dashboard-home .studio-telemetry__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dashboard-home .dashboard-home__welcome::after {
-    right: -9rem;
-    bottom: -13rem;
+  .dashboard-home .studio-metric:nth-child(odd) {
+    border-left: 0;
   }
 
-  .dashboard-home .dashboard-home__welcome h1 { font-size: clamp(2.1rem, 7vw, 3.2rem); }
-
-  .dashboard-home .dashboard-home__summary {
-    max-width: none;
-    text-align: left;
+  .dashboard-home .studio-metric:nth-child(n+3) {
+    border-top: 1px solid var(--home-border);
   }
-
-  .dashboard-home .dashboard-home__weekly .activity-chart { height: 150px; }
 }
 
 @media (max-width: 520px) {
@@ -2927,7 +3019,9 @@ html[data-theme='dark'] .dashboard-home .dashboard-home__actions .btn:first-chil
     --home-radius: 15px;
   }
 
-  .dashboard-home .dashboard-home__welcome { padding: 1.15rem; }
+  .dashboard-home .studio-telemetry {
+    padding: 1rem;
+  }
 
   .dashboard-home .dashboard-home__hero-actions { width: 100%; }
 
@@ -2936,15 +3030,12 @@ html[data-theme='dark'] .dashboard-home .dashboard-home__actions .btn:first-chil
     width: 100%;
   }
 
-  .dashboard-home .dashboard-home__stats { gap: 0.6rem; }
-
-  .dashboard-home .dashboard-home__stats .dashboard-stat,
-  .dashboard-home .dashboard-home__streak-stats .dashboard-stat {
-    min-height: 92px;
-    padding: 0.8rem;
-  }
-
   .dashboard-home .dashboard-home__streak-stats { grid-template-columns: minmax(0, 1fr); }
+
+  .dashboard-home .dashboard-home__streak-stats .dashboard-stat {
+    min-height: 90px;
+    padding: 0.85rem;
+  }
 
   .dashboard-home .dashboard-home__actions { gap: 0.55rem; }
 
@@ -2955,14 +3046,10 @@ html[data-theme='dark'] .dashboard-home .dashboard-home__actions .btn:first-chil
 
   .dashboard-home .dashboard-home__session-meta { max-width: 38%; }
 
-  .dashboard-home .dashboard-home__weekly .activity-chart {
-    height: 138px;
+  .dashboard-home .studio-telemetry__chart.activity-chart {
+    height: 102px;
     gap: 0.3rem;
   }
-}
-
-@media (max-width: 440px) {
-  .dashboard-home .dashboard-home__stats { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---------------------------------------------------------------------------
@@ -3584,75 +3671,38 @@ html[data-theme='light'] .explore-page .grid .card::before {
 
 /* ---------------------------------------------------------------------------
    Home dashboard elevation (Phase 1B)
-   Applies the Phase 0 depth tokens to the dashboard with the same conventions
-   as Phase 1A. Appended after the dashboard and Explore blocks, so these
-   scoped rules win without editing the original sections. Layout, spacing,
-   grid columns and breakpoints are untouched.
+   Applies the Phase 0 depth tokens to the Studio Hero and supporting panels.
 --------------------------------------------------------------------------- */
 
-/* Hero: the one featured surface, so it sits above the resting panels. */
-.dashboard-home .dashboard-home__welcome { box-shadow: var(--elevation-2); }
+/* Hero: the featured 3D studio surface sits above the resting panels. */
+.dashboard-home .studio-hero { box-shadow: var(--elevation-2); }
 
-html[data-theme='dark'] .dashboard-home .dashboard-home__welcome {
-  background:
-    linear-gradient(180deg, var(--ambient-fill), transparent 52%),
-    radial-gradient(circle at 88% 0%, rgba(255, 95, 0, 0.2), transparent 44%),
-    var(--home-panel-bg);
-  box-shadow: var(--elevation-2);
-}
-
-html[data-theme='light'] .dashboard-home .dashboard-home__welcome {
-  border-color: rgba(255, 95, 0, 0.2);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent 48%),
-    radial-gradient(circle at 88% 0%, rgba(255, 95, 0, 0.2), transparent 46%),
-    linear-gradient(135deg, #FFF1E6 0%, #FDF8F3 58%, #FFFFFF 100%);
-  box-shadow: var(--elevation-2);
-}
-
-/* Primary CTA keeps its orange glow and gains the shared top bevel. */
-.dashboard-home .dashboard-home__hero-actions .btn--primary {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 10px 24px rgba(255, 95, 0, 0.22);
-}
-
-/* Panels rest at elevation 1. The attribute qualifier matches the specificity
-   of the legacy dark-theme shadow rules, so one token-based rule covers both
-   themes instead of restating the same shadow per theme. */
-html[data-theme] .dashboard-home .dashboard-home__overview,
-html[data-theme] .dashboard-home .dashboard-home__weekly,
+/* Panels rest at elevation 1. */
 html[data-theme] .dashboard-home .dashboard-home__panel,
 html[data-theme] .dashboard-home .dashboard-home__quick,
 html[data-theme] .dashboard-home .dashboard-home__goals > .goal-panel {
   box-shadow: var(--elevation-1);
 }
 
-/* Stat cards share the card-level resting elevation; hover raises them one
-   step. The depth transition also replaces the old transform snap. */
-.dashboard-home .dashboard-home__stats .dashboard-stat,
+/* Stat cards share the card-level resting elevation; hover raises them one step. */
 .dashboard-home .dashboard-home__streak-stats .dashboard-stat {
   box-shadow: var(--elevation-1);
   transition: var(--depth-transition);
 }
 
-/* Recessed nested surfaces: the ambient fill is a slate tint in light mode and
-   a soft gray lift in dark mode, so neither theme borrows the other's shadow. */
+/* Recessed nested surfaces. */
 .dashboard-home .dashboard-home__empty,
-.dashboard-home .dashboard-home__weekly .activity-chart__track,
+.dashboard-home .studio-telemetry__chart .activity-chart__track,
 .dashboard-home .goal-panel .goal-progress {
   box-shadow: inset 0 1px 2px var(--ambient-fill);
 }
 
-/* Goal cards sit inside the goal panel, so they get a bevel lip rather than a
-   full elevation. Achieved cards keep their green border and tint. */
+/* Goal cards sit inside the goal panel, so they get a bevel lip. */
 .dashboard-home .goal-panel .goal-card {
   box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
 }
 
-/* Small dashboard controls: resting bevel, depth timing and a press state.
-   Their hover lift comes from the existing .btn translate, which is composed
-   with the new shadow instead of being overridden. */
+/* Small dashboard controls: resting bevel, depth timing and a press state. */
 .dashboard-home .dashboard-home__actions .btn,
 .dashboard-home .dashboard-home__actions .btn:first-child,
 .dashboard-home .dashboard-home__view-plan {
@@ -3674,7 +3724,6 @@ html[data-theme] .dashboard-home .dashboard-home__goals > .goal-panel {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .dashboard-home .dashboard-home__stats .dashboard-stat:hover,
   .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover {
     border-color: var(--home-border-strong);
     box-shadow: var(--elevation-2);
@@ -3686,10 +3735,7 @@ html[data-theme] .dashboard-home .dashboard-home__goals > .goal-panel {
   }
 }
 
-/* Touch keeps the static resting depth: the pre-existing unguarded stat hover
-   and the global .btn hover lift are neutralised for dashboard surfaces. */
 @media (hover: none) {
-  .dashboard-home .dashboard-home__stats .dashboard-stat:hover,
   .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover {
     border-color: var(--home-border);
     box-shadow: var(--elevation-1);
@@ -3704,13 +3750,11 @@ html[data-theme] .dashboard-home .dashboard-home__goals > .goal-panel {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-home .dashboard-home__stats .dashboard-stat,
   .dashboard-home .dashboard-home__streak-stats .dashboard-stat,
   .dashboard-home .dashboard-home__actions .btn,
   .dashboard-home .dashboard-home__view-plan,
   .dashboard-home .dashboard-home__hero-actions .btn { transition: none; }
 
-  .dashboard-home .dashboard-home__stats .dashboard-stat:hover,
   .dashboard-home .dashboard-home__streak-stats .dashboard-stat:hover,
   .dashboard-home .dashboard-home__actions .btn:hover,
   .dashboard-home .dashboard-home__actions .btn:active,
@@ -4484,8 +4528,8 @@ html[data-theme='light'] .main a:not(.btn):not(.card__link):active { color: var(
 
 html[data-theme='light'] .main .eyebrow { color: var(--color-accent-accessible); }
 
-html[data-theme='light'] .dashboard-home .dashboard-home__welcome .eyebrow,
-html[data-theme='light'] .dashboard-home .dashboard-home__weekly .eyebrow { color: var(--color-accent-accessible); }
+html[data-theme='light'] .dashboard-home .studio-lead__top .eyebrow,
+html[data-theme='light'] .dashboard-home .studio-telemetry__head .eyebrow { color: var(--color-accent-accessible); }
 
 html[data-theme='light'] .main .chip--accent { color: var(--color-accent-accessible); }
 
