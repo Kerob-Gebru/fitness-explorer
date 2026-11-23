@@ -68,6 +68,7 @@ export default function WorkoutSessionPage() {
   if (!session) {
     return (
       <section className="workout-session-page">
+        <h1 className="visually-hidden">Workout session</h1>
         <EmptyState title="No workout is in progress" text="Start a saved plan or builder workout from your workout dashboard to begin an interactive session.">
           <Link to="/workout" className="btn btn--primary">Go to workout dashboard</Link>
         </EmptyState>

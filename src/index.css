@@ -3858,3 +3858,755 @@ html[data-theme] .workout-page .dashboard-exercise--complete {
   .workout-page .icon-btn:active,
   .workout-page .remove-icon:active { transform: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Favorites page elevation (Phase 2A)
+   FavoritesPage renders its heading, empty state and grid directly under
+   .main, so these direct-child selectors match no other page: every other
+   grid or message lives inside its own page wrapper. The cards reuse the
+   Explore treatment so favorites read as the same exercise card design.
+--------------------------------------------------------------------------- */
+
+/* Resting surface, matching the Explore card: contact shadow, top bevel and a
+   faint vertical wash over the existing rounded card. */
+html[data-theme] .main > .grid .card {
+  border-color: var(--color-border);
+  border-top-color: var(--color-border-strong);
+  background:
+    linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+    var(--color-surface);
+  box-shadow: var(--elevation-1);
+  transition: var(--depth-transition);
+}
+
+html[data-theme='light'] .main > .grid .card {
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+}
+
+/* Recessed media area over the exercise image. The overlay keeps the card's
+   top bevel visible while shading the top and outer edges of the media. */
+.main > .grid .card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 13px 13px 0 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 22%),
+    radial-gradient(125% 90% at 50% 0%, transparent 58%, rgba(0, 0, 0, 0.16) 100%);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+html[data-theme='light'] .main > .grid .card::before {
+  background:
+    linear-gradient(180deg, rgba(23, 28, 36, 0.08), transparent 20%),
+    radial-gradient(125% 90% at 50% 0%, transparent 62%, rgba(23, 28, 36, 0.07) 100%);
+}
+
+/* Floating favorite/workout controls sit above the media. Selected states keep
+   their own orange treatment through their higher-specificity rules. */
+.main > .grid .card .fav-btn--icon,
+.main > .grid .card .workout-btn--compact {
+  box-shadow: var(--elevation-2);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+/* Empty state is the page's only content, so it reads as a recessed well. */
+.main > h1 + .message {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.main > h1 + .message .btn {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.main > h1 + .message .btn:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .main > .grid .card:hover,
+  html[data-theme] .main > .grid .card:focus-within {
+    border-color: rgba(255, 95, 0, 0.55);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-4px);
+  }
+
+  html[data-theme] .main > .grid .card:active {
+    box-shadow: var(--elevation-1);
+    transform: translateY(-1px);
+  }
+
+  .main > .grid .card .fav-btn--icon:not(.is-active):hover,
+  .main > .grid .card .workout-btn--compact:not(.workout-btn--selected):hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent-soft);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-1px);
+  }
+}
+
+/* Touch keeps the static resting card and drops the sticky hover lift. */
+@media (hover: none) {
+  html[data-theme] .main > .grid .card:hover,
+  html[data-theme] .main > .grid .card:focus-within {
+    border-color: var(--color-border);
+    border-top-color: var(--color-border-strong);
+    background:
+      linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+      var(--color-surface);
+    box-shadow: var(--elevation-1);
+    transform: none;
+  }
+
+  html[data-theme='light'] .main > .grid .card:hover,
+  html[data-theme='light'] .main > .grid .card:focus-within {
+    background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+  }
+
+  .main > .grid .card .fav-btn--icon:hover,
+  .main > .grid .card .workout-btn--compact:hover {
+    transform: none;
+  }
+
+  .main > h1 + .message .btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] .main > .grid .card,
+  html[data-theme] .main > .grid .card .fav-btn--icon,
+  html[data-theme] .main > .grid .card .workout-btn--compact,
+  .main > h1 + .message .btn { transition: none; }
+
+  html[data-theme] .main > .grid .card:hover,
+  html[data-theme] .main > .grid .card:focus-within,
+  html[data-theme] .main > .grid .card:active,
+  .main > .grid .card .fav-btn--icon:hover,
+  .main > .grid .card .workout-btn--compact:hover,
+  .main > h1 + .message .btn:hover,
+  .main > h1 + .message .btn:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Exercise details elevation (Phase 2B)
+   Scoped to .exercise-details so the compact learning center inside a workout
+   session keeps its own treatment. The main learning surface is the focal
+   panel; media is recessed, information blocks are raised, and related cards
+   reuse the Explore/Favorites card treatment.
+--------------------------------------------------------------------------- */
+
+/* Main content surface sits above the page, like the featured card on Explore. */
+html[data-theme] .exercise-details .learning-center {
+  box-shadow: var(--elevation-2);
+}
+
+/* Media reads as a well inside the panel, with the frame sunk one step deeper. */
+html[data-theme] .exercise-details .learning-center__media {
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.exercise-details .learning-center__visual-frame {
+  box-shadow: inset 0 2px 8px var(--ambient-shadow);
+}
+
+/* Guide, muscle facts and technique blocks are raised tiles inside the panel. */
+html[data-theme] .exercise-details .learning-center__guide,
+html[data-theme] .exercise-details .learning-center__metadata,
+html[data-theme] .exercise-details .learning-center__technique {
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* Step rows stay flat list items but gain a top lip; the current step keeps its
+   orange fill and the selected index keeps its orange circle. */
+.exercise-details .learning-center__steps li {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* Upload panel is a supporting surface below the exercise overview. */
+html[data-theme] .exercise-details .exercise-image-upload {
+  box-shadow: var(--elevation-1);
+}
+
+/* Recessed filters and media selectors. */
+.exercise-details .input {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.exercise-details .message {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Actions: favorite/workout controls, upload, guide navigation and filter
+   actions share the resting bevel and tactile press. Hover lifts stay. */
+.exercise-details .btn,
+.exercise-details .fav-btn,
+.exercise-details .workout-btn {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.exercise-details .btn:active:not(:disabled),
+.exercise-details .fav-btn:active,
+.exercise-details .workout-btn:active {
+  transform: translateY(var(--press-depth));
+}
+
+/* Related exercise cards match the Explore/Favorites card design. */
+html[data-theme] .exercise-details .grid .card {
+  border-color: var(--color-border);
+  border-top-color: var(--color-border-strong);
+  background:
+    linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+    var(--color-surface);
+  box-shadow: var(--elevation-1);
+  transition: var(--depth-transition);
+}
+
+html[data-theme='light'] .exercise-details .grid .card {
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+}
+
+.exercise-details .grid .card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 13px 13px 0 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 22%),
+    radial-gradient(125% 90% at 50% 0%, transparent 58%, rgba(0, 0, 0, 0.16) 100%);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+html[data-theme='light'] .exercise-details .grid .card::before {
+  background:
+    linear-gradient(180deg, rgba(23, 28, 36, 0.08), transparent 20%),
+    radial-gradient(125% 90% at 50% 0%, transparent 62%, rgba(23, 28, 36, 0.07) 100%);
+}
+
+.exercise-details .grid .card .fav-btn--icon,
+.exercise-details .grid .card .workout-btn--compact {
+  box-shadow: var(--elevation-2);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.exercise-details .grid .card .card__feedback {
+  max-width: calc(100% - 4.35rem);
+  line-height: 1.35;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .exercise-details .grid .card:hover,
+  html[data-theme] .exercise-details .grid .card:focus-within {
+    border-color: rgba(255, 95, 0, 0.55);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-4px);
+  }
+
+  html[data-theme] .exercise-details .grid .card:active {
+    box-shadow: var(--elevation-1);
+    transform: translateY(-1px);
+  }
+
+  .exercise-details .grid .card .fav-btn--icon:not(.is-active):hover,
+  .exercise-details .grid .card .workout-btn--compact:not(.workout-btn--selected):hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent-soft);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-1px);
+  }
+}
+
+@media (hover: none) {
+  html[data-theme] .exercise-details .grid .card:hover,
+  html[data-theme] .exercise-details .grid .card:focus-within {
+    border-color: var(--color-border);
+    border-top-color: var(--color-border-strong);
+    background:
+      linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+      var(--color-surface);
+    box-shadow: var(--elevation-1);
+    transform: none;
+  }
+
+  html[data-theme='light'] .exercise-details .grid .card:hover,
+  html[data-theme='light'] .exercise-details .grid .card:focus-within {
+    background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+  }
+
+  .exercise-details .grid .card .fav-btn--icon:hover,
+  .exercise-details .grid .card .workout-btn--compact:hover { transform: none; }
+
+  .exercise-details .btn:hover,
+  .exercise-details .fav-btn:hover,
+  .exercise-details .workout-btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] .exercise-details .grid .card,
+  html[data-theme] .exercise-details .grid .card .fav-btn--icon,
+  html[data-theme] .exercise-details .grid .card .workout-btn--compact,
+  .exercise-details .btn,
+  .exercise-details .fav-btn,
+  .exercise-details .workout-btn { transition: none; }
+
+  html[data-theme] .exercise-details .grid .card:hover,
+  html[data-theme] .exercise-details .grid .card:focus-within,
+  html[data-theme] .exercise-details .grid .card:active,
+  .exercise-details .grid .card .fav-btn--icon:hover,
+  .exercise-details .grid .card .workout-btn--compact:hover,
+  .exercise-details .btn:active,
+  .exercise-details .fav-btn:active,
+  .exercise-details .workout-btn:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Workout session elevation (Phase 2C)
+   Scoped to .workout-session-page. The session banner and the active exercise
+   are the raised focal surfaces, progress and rest controls sit at resting
+   elevation, and the compact learning guide is recessed inside the active
+   exercise so the current set controls stay dominant.
+--------------------------------------------------------------------------- */
+
+/* Session banner: the page's featured surface. */
+html[data-theme] .workout-session-page .workout-session-header {
+  box-shadow: var(--elevation-2);
+}
+
+/* Progress overview and rest timer rest one step below the active exercise. */
+html[data-theme] .workout-session-page .workout-session-progress,
+html[data-theme] .workout-session-page .rest-timer {
+  box-shadow: var(--elevation-1);
+}
+
+.workout-session-page .workout-session-progress__track {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Exercise step buttons are selectable tiles: raised surface, bevel and the
+   shared depth timing. Current and completed states keep their own colours;
+   the higher-specificity state rule below restores the orange current fill. */
+html[data-theme] .workout-session-page .workout-session-step {
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+html[data-theme] .workout-session-page .workout-session-step.is-current {
+  border-color: var(--color-accent);
+  background: var(--status-in-progress-bg);
+}
+
+/* The active exercise is the visual focal point. */
+html[data-theme] .workout-session-page .interactive-exercise {
+  box-shadow: var(--elevation-2);
+}
+
+/* Compact movement guide: recessed inside the active exercise, with its own
+   media/guide/facts blocks raised one step back out. */
+html[data-theme] .workout-session-page .learning-center--compact {
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+html[data-theme] .workout-session-page .learning-center--compact .learning-center__media,
+html[data-theme] .workout-session-page .learning-center--compact .learning-center__guide,
+html[data-theme] .workout-session-page .learning-center--compact .learning-center__metadata,
+html[data-theme] .workout-session-page .learning-center--compact .learning-center__technique {
+  background: var(--color-surface);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* Set tracking tiles: raised, with the completed state keeping its green border
+   and tint through the status token so it stays visible in both themes. */
+html[data-theme] .workout-session-page .interactive-set {
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+html[data-theme] .workout-session-page .interactive-set.active-set--complete {
+  border-color: var(--color-success);
+  background: var(--status-completed-bg);
+}
+
+/* Recessed form fields and set inputs. */
+.workout-session-page .input,
+.workout-session-page .interactive-set input:not([type="checkbox"]) {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Controls: resting bevel, depth timing and tactile press. The existing .btn
+   hover lift and the disabled opacity are composed with, not replaced. */
+.workout-session-page .btn {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.workout-session-page .btn:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+}
+
+.workout-session-page .message {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .workout-session-page .workout-session-step:hover:not(:disabled) {
+    box-shadow: var(--elevation-2);
+  }
+}
+
+/* Touch: no sticky tile elevation or button lift after a tap. */
+@media (hover: none) {
+  html[data-theme] .workout-session-page .workout-session-step:hover:not(:disabled) {
+    box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  }
+
+  .workout-session-page .btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workout-session-page .workout-session-step,
+  .workout-session-page .btn { transition: none; }
+
+  .workout-session-page .workout-session-step:hover,
+  .workout-session-page .btn:hover,
+  .workout-session-page .btn:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Workout calendar elevation (Phase 2D)
+   Scoped to .calendar-page. The month grid is the primary raised surface, the
+   sidebar and schedule panels rest with it, agenda tiles are raised inside the
+   panels, and day cells only gain a bevel so the today/selected fills and the
+   selected accent ring stay untouched.
+--------------------------------------------------------------------------- */
+
+/* Panels: the month calendar leads; sidebar and schedule rest one step below. */
+html[data-theme] .calendar-page .calendar-panel {
+  box-shadow: var(--elevation-1);
+}
+
+html[data-theme] .calendar-page .calendar-layout > .calendar-panel {
+  box-shadow: var(--elevation-2);
+}
+
+/* Day cells: bevel-only separation. The selected state composes the existing
+   accent inset ring with the bevel instead of replacing it. */
+html[data-theme] .calendar-page .calendar-day {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+html[data-theme] .calendar-page .calendar-day--selected {
+  box-shadow:
+    inset 0 0 0 2px var(--color-accent),
+    inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* Agenda entries are buttons, so they get a raised tile and a restrained
+   fine-pointer hover step. Status borders on completed/cancelled entries and
+   the selected event outline are not touched. */
+html[data-theme] .calendar-page .calendar-agenda__item {
+  background: var(--color-surface-elevated);
+  box-shadow: var(--elevation-1);
+  transition: var(--depth-transition);
+}
+
+html[data-theme] .calendar-page .calendar-agenda__item:focus-visible {
+  box-shadow: var(--elevation-2);
+}
+
+/* Recessed form fields and the notice bar. */
+.calendar-page .input {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.calendar-page > .workout-notice {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+.calendar-page .message {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Toolbar, detail and form actions: resting bevel with tactile press. */
+.calendar-page .btn {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.calendar-page .btn:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .calendar-page .calendar-agenda__item:hover {
+    box-shadow: var(--elevation-2);
+  }
+}
+
+@media (hover: none) {
+  html[data-theme] .calendar-page .calendar-agenda__item:hover {
+    box-shadow: var(--elevation-1);
+  }
+
+  .calendar-page .btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-page .calendar-agenda__item,
+  .calendar-page .btn { transition: none; }
+
+  .calendar-page .btn:hover,
+  .calendar-page .btn:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Progress page elevation (Phase 2E)
+   Scoped to .progress-page so the Home goal panel and the shared stat cards on
+   other pages keep their existing treatment. Panels rest at elevation 1, while
+   summary tiles, goal cards and milestones use a bevel-only lift; chart
+   figures are recessed wells. Charts, values and calculations are untouched.
+--------------------------------------------------------------------------- */
+
+/* Larger panels: goals, analytics sections and the empty analytics panel. */
+html[data-theme] .progress-page .goal-panel,
+html[data-theme] .progress-page .analytics-section,
+html[data-theme] .progress-page .analytics-empty {
+  box-shadow: var(--elevation-1);
+}
+
+/* Summary tiles sit inside a panel, so they read as raised tiles rather than
+   competing drop-shadow cards. Success/progress colors are unchanged. */
+html[data-theme] .progress-page .analytics-stats .dashboard-stat {
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+/* Goal cards and milestones: same bevel-only lift. Achieved goal cards keep a
+   green border and the shared completed-session tint. */
+html[data-theme] .progress-page .goal-card,
+html[data-theme] .progress-page .milestone {
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+}
+
+html[data-theme] .progress-page .goal-card--achieved {
+  border-color: rgba(37, 139, 99, 0.55);
+  background: var(--status-completed-bg);
+}
+
+/* Charts and progress tracks are recessed wells inside their panels. */
+html[data-theme] .progress-page .trend-chart {
+  background: var(--color-surface-secondary);
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.progress-page .goal-progress,
+.progress-page .trend-chart__track {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* Goal editor fields and actions. */
+.progress-page .input {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+.progress-page .btn {
+  box-shadow: inset 0 1px 0 var(--bevel-highlight-color);
+  transition:
+    var(--depth-transition),
+    background-color 150ms var(--depth-ease),
+    color 150ms var(--depth-ease);
+}
+
+.progress-page .btn:active:not(:disabled) {
+  transform: translateY(var(--press-depth));
+}
+
+@media (hover: none) {
+  .progress-page .btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-page .btn { transition: none; }
+
+  .progress-page .btn:hover,
+  .progress-page .btn:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Final polish corrections
+   Contrast, card consistency, touch guards and field depth from the final
+   visual QA audit. Appended so the approved elevation work stays untouched.
+--------------------------------------------------------------------------- */
+
+/* A. Accessible accent text in light theme. Fills, borders and icons keep the
+   bright accent; only text switches to the darker accent. */
+html[data-theme='light'] .main a:not(.btn):not(.card__link) { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .main a:not(.btn):not(.card__link):hover,
+html[data-theme='light'] .main a:not(.btn):not(.card__link):active { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .main .eyebrow { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .dashboard-home .dashboard-home__welcome .eyebrow,
+html[data-theme='light'] .dashboard-home .dashboard-home__weekly .eyebrow { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .main .chip--accent { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .dashboard-home .dashboard-home__panel .dashboard-section-heading a:not(.btn),
+html[data-theme='light'] .dashboard-home .dashboard-home__panel .dashboard-section-heading a:not(.btn):hover { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .main .btn:hover:not(:disabled):not(.btn--primary):not(.btn--danger) { color: var(--color-accent-accessible); }
+
+html[data-theme='light'] .main .calendar-today-label,
+html[data-theme='light'] .main .calendar-day--today .calendar-day__date,
+html[data-theme='light'] .main .workout-row__number,
+html[data-theme='light'] .main .prescription-total strong,
+html[data-theme='light'] .main .learning-center__steps li > span,
+html[data-theme='light'] .main .summary__number,
+html[data-theme='light'] .main .goal-card__heading > strong,
+html[data-theme='light'] .main .rest-timer__time,
+html[data-theme='light'] .main .interactive-set legend,
+html[data-theme='light'] .main .count-pill,
+html[data-theme='light'] .main .workout-btn--selected,
+html[data-theme='light'] .main .workout-notice { color: var(--color-accent-accessible); }
+
+/* B. One card geometry for exercise cards on Home, Favorites and Details.
+   Explore already uses the same radius and token shadow. */
+html[data-theme] .card {
+  border: 1px solid var(--color-border);
+  border-top-color: var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+    var(--color-surface);
+  box-shadow: var(--elevation-1);
+  transition: var(--depth-transition);
+}
+
+html[data-theme='light'] .card {
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+}
+
+.main > .grid .card::before,
+.exercise-details .grid .card::before {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.dashboard-home .dashboard-home__stats .dashboard-stat,
+.dashboard-home .dashboard-home__streak-stats .dashboard-stat {
+  border-radius: var(--radius-lg);
+}
+
+/* D. Home exercise cards: token hover lift on fine pointers, static resting
+   depth on touch, and no movement under reduced motion. The Home library
+   grids sit in sibling .section blocks, so the dashboard presence scopes them
+   without touching the already-guarded Explore, Favorites and Details grids. */
+@media (hover: hover) and (pointer: fine) {
+  body:has(.dashboard-home) .main .grid .card:hover,
+  body:has(.dashboard-home) .main .grid .card:focus-within {
+    border-color: rgba(255, 95, 0, 0.55);
+    border-top-color: rgba(255, 95, 0, 0.55);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-4px);
+  }
+
+  body:has(.dashboard-home) .main .grid .card:active {
+    box-shadow: var(--elevation-1);
+    transform: translateY(-1px);
+  }
+}
+
+@media (hover: none) {
+  body:has(.dashboard-home) .main .grid .card:hover,
+  body:has(.dashboard-home) .main .grid .card:focus-within {
+    border-color: var(--color-border);
+    border-top-color: var(--color-border-strong);
+    background:
+      linear-gradient(180deg, var(--ambient-fill), transparent 40%),
+      var(--color-surface);
+    box-shadow: var(--elevation-1);
+    transform: none;
+  }
+
+  html[data-theme='light'] body:has(.dashboard-home) .main .grid .card:hover,
+  html[data-theme='light'] body:has(.dashboard-home) .main .grid .card:focus-within {
+    background: linear-gradient(180deg, var(--color-surface), var(--color-surface-elevated));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(.dashboard-home) .main .grid .card { transition: none; }
+
+  body:has(.dashboard-home) .main .grid .card:hover,
+  body:has(.dashboard-home) .main .grid .card:focus-within,
+  body:has(.dashboard-home) .main .grid .card:active { transform: none; }
+}
+
+/* C. Small labels on raised or elevated tiles use the brighter secondary grey;
+   the base muted grey would fall below 4.5:1 on those fills. */
+html[data-theme] .facts dt,
+html[data-theme] .learning-center__facts dt,
+html[data-theme] .learning-center__figure figcaption,
+html[data-theme] .calendar-weekday,
+html[data-theme] .goal-card__heading p,
+html[data-theme] .goal-card__status,
+html[data-theme] .goal-panel__milestone,
+html[data-theme] .dashboard-stat__hint { color: var(--color-text-secondary); }
+
+html[data-theme='dark'] .dashboard-stat .muted,
+html[data-theme='dark'] .learning-center__info-group h4,
+html[data-theme='dark'] .learning-center__guidance-group h4 { color: var(--color-text-secondary); }
+
+/* E. Explore fields share the recessed treatment used by the other pages.
+   Focus rules keep their ring because they are more specific. */
+.explore-page .search .input,
+.explore-page .filters .input,
+.explore-page .sort-control .input {
+  box-shadow: inset 0 1px 2px var(--ambient-fill);
+}
+
+/* G. Single drawer width source for the sidebar and its close control. */
+.app-shell { --app-drawer-width: 256px; }
+.app-sidebar { width: var(--app-drawer-width); }
+.app-shell__drawer-close { left: calc(var(--app-drawer-width) - 3rem); }
+
+@media (max-width: 760px) {
+  .app-shell { --app-drawer-width: min(280px, 86vw); }
+}

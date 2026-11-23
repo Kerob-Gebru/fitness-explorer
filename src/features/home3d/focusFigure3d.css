@@ -1,0 +1,52 @@
+/* Loaded only with the lazy 3D scene chunk, so the Home CSS stays lean. */
+
+.focus-figure__viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 220 / 360;
+  min-height: 220px;
+  max-height: 340px;
+  overflow: hidden;
+  border-radius: 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.focus-figure__viewport.is-zone-hovered {
+  cursor: pointer;
+}
+
+.focus-figure__viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.focus-figure__canvas {
+  display: block;
+}
+
+.focus-figure__drag-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 999px;
+  background: var(--ff-panel);
+  color: var(--ff-muted);
+  font-size: 0.55rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .focus-figure__viewport {
+    max-height: 300px;
+  }
+}

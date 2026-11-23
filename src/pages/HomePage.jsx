@@ -16,6 +16,8 @@ import { useWorkoutStore } from '../features/workout/useWorkoutStore.js'
 import { calculateWorkoutProgress, formatSessionDate, getCompletedWorkoutSessions, localDateKey } from '../features/workout/workoutProgress.js'
 import GoalProgressPanel from '../features/workout/GoalProgressPanel.jsx'
 import { formatDateKey } from '../features/workout/workoutCalendar.js'
+import FocusFigure from '../features/home3d/FocusFigure.jsx'
+import { getWeeklyFocusData } from '../features/home3d/focusFigureData.js'
 
 export default function HomePage() {
   useDocumentTitle('Dashboard')
@@ -32,6 +34,7 @@ export default function HomePage() {
   const activeSession = useWorkoutStore((state) => state.activeSession)
   const builderExercises = useWorkoutStore((state) => state.exercises)
   const stats = useMemo(() => calculateWorkoutProgress(history), [history])
+  const focusData = useMemo(() => getWeeklyFocusData(history), [history])
   const recentSessions = useMemo(() => getCompletedWorkoutSessions(history).slice(0, 3), [history])
 
   const { data: exercises, loading, error, retry } = useAsyncData(() => getExercises(), [])
@@ -47,6 +50,10 @@ export default function HomePage() {
     setBodyPart(bodyPart)
   }
 
+  function openFocusZone(zone) {
+    openCategory(zone.bodyPart)
+  }
+
   const categories = exercises ? Object.entries(countBy(exercises, 'bodyPart')) : []
   const currentDate = new Date()
   const today = new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(currentDate)
@@ -59,7 +66,7 @@ export default function HomePage() {
   return (
     <>
       <section className="dashboard-home" aria-labelledby="dashboard-title">
-        <header className="dashboard-home__welcome">
+        <header className="dashboard-home__welcome dashboard-home__welcome--focus">
           <div>
             <p className="eyebrow">YOUR FITNESS SPACE</p>
             <h1 id="dashboard-title">Find your stronger side.</h1>
@@ -71,7 +78,10 @@ export default function HomePage() {
               <Link className="btn" to="/explore">Explore exercises</Link>
             </div>
           </div>
-          <time className="dashboard-home__date" dateTime={localDateKey(currentDate)}>{today}</time>
+          <div className="dashboard-home__hero-rail">
+            <time className="dashboard-home__date" dateTime={localDateKey(currentDate)}>{today}</time>
+            <FocusFigure data={focusData} onExploreZone={openFocusZone} />
+          </div>
         </header>
 
         <section className="dashboard-home__overview" aria-labelledby="dashboard-overview-title">
