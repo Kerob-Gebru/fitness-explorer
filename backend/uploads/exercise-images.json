@@ -1,0 +1,37 @@
+{
+  "mock:demo-001": {
+    "exerciseId": "demo-001",
+    "source": "mock",
+    "imageUrl": "/uploads/8a30c24c-ca5c-4077-aa49-eb1585f15be0.jpg",
+    "filename": "8a30c24c-ca5c-4077-aa49-eb1585f15be0.jpg",
+    "updatedAt": "2026-11-23T19:23:46.095Z"
+  },
+  "mock:demo-002": {
+    "exerciseId": "demo-002",
+    "source": "mock",
+    "imageUrl": "/uploads/9239b995-2b46-4205-ace6-de58b940b4d6.jpg",
+    "filename": "9239b995-2b46-4205-ace6-de58b940b4d6.jpg",
+    "updatedAt": "2026-11-23T19:25:05.048Z"
+  },
+  "mock:demo-003": {
+    "exerciseId": "demo-003",
+    "source": "mock",
+    "imageUrl": "/uploads/2ef743de-0ac2-4f5b-896f-04dcca139d21.jpg",
+    "filename": "2ef743de-0ac2-4f5b-896f-04dcca139d21.jpg",
+    "updatedAt": "2026-11-23T19:31:33.142Z"
+  },
+  "mock:demo-004": {
+    "exerciseId": "demo-004",
+    "source": "mock",
+    "imageUrl": "/uploads/9bd097cc-fcae-41d5-a37f-01ddbc5fb9a4.webp",
+    "filename": "9bd097cc-fcae-41d5-a37f-01ddbc5fb9a4.webp",
+    "updatedAt": "2026-11-23T19:29:08.071Z"
+  },
+  "mock:demo-005": {
+    "exerciseId": "demo-005",
+    "source": "mock",
+    "imageUrl": "/uploads/629e4001-c887-4a68-a3cc-c97f03f9b71a.jpg",
+    "filename": "629e4001-c887-4a68-a3cc-c97f03f9b71a.jpg",
+    "updatedAt": "2026-11-23T19:49:14.788Z"
+  }
+}
