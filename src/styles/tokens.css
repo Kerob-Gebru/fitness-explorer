@@ -1,14 +1,30 @@
-/* Fitness Explorer design tokens.
+/* Fitness Explorer design tokens — Matte Charcoal, Soft White & Safety Orange.
    Dark is the default. html[data-theme='light'] overrides the theme values,
    so the existing ThemeProvider and localStorage preference keep working. */
 
 :root {
-  --font-body: 'Aptos', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
-  --font-head: 'Arial', 'Aptos Display', system-ui, sans-serif;
+  --font-display: 'Bodoni Moda', 'Didot', 'Bodoni 72', serif;
+  --font-body: 'Albert Sans', 'Aptos', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-head: 'Albert Sans', system-ui, sans-serif;
+  --font-mono: 'Martian Mono', ui-monospace, monospace;
+
+  /* Core charcoal & safety orange palette primitives */
+  --color-ink: #0D0F13;
+  --color-ink-2: #141820;
+  --color-ink-3: #1B202B;
+  --color-bone: #F4F5F2;
+  --color-bone-2: #E7E9ED;
+  --color-stone: #D7D9DE;
+  --color-mist: #8E97A4;
+  --color-graphite: #262C36;
+  --color-orange: #FF5F00;
+  --color-orange-hover: #FF7724;
+  --color-orange-soft: #FF8A3D;
+  --color-orange-deep: #B23C00;
 
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-lg: 18px;
   --radius: var(--radius-md);
 
   --space-1: 0.25rem;
@@ -25,21 +41,20 @@
   --transition-slow: 300ms ease;
   --button-disabled-opacity: 0.45;
 
-  /* Depth system (Phase 0): shared geometry and motion. Theme-specific
-     shadow values live beside each palette so both themes resolve their own. */
+  /* Cinematic easing & elevation */
+  --ease-silk: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-drawer: cubic-bezier(0.7, 0, 0.2, 1);
   --elevation-0: none;
   --tilt-max: 6deg;
   --tilt-perspective: 900px;
   --press-depth: 1px;
-  --depth-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
-  /* --transition-fast already carries "ease"; pairing it with --depth-ease
-     would put two timing functions in one transition and invalidate the list. */
-  --depth-transition: transform 150ms var(--depth-ease),
-    box-shadow 150ms var(--depth-ease),
-    border-color 150ms var(--depth-ease);
+  --depth-ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --depth-transition: transform 180ms var(--depth-ease),
+    box-shadow 180ms var(--depth-ease),
+    border-color 180ms var(--depth-ease);
 }
 
-/* Dark theme (default) */
+/* Dark theme (default — Matte Charcoal Studio + Safety Orange) */
 :root,
 html[data-theme='dark'] {
   color-scheme: dark;
@@ -47,38 +62,35 @@ html[data-theme='dark'] {
   /* Background and surfaces */
   --color-bg: #0D0F13;
   --color-surface: #141820;
-  --color-surface-secondary: #101319;
+  --color-surface-secondary: #10141B;
   --color-surface-elevated: #1B202B;
-  --color-nav-bg: rgba(13, 15, 19, 0.92);
-  --color-nav-shadow: rgba(0, 0, 0, 0.5);
-  --color-input-bg: #101319;
-  --color-input-border: #28303D;
-  --color-input-placeholder: #8A94A3;
+  --color-nav-bg: rgba(13, 15, 19, 0.9);
+  --color-nav-shadow: rgba(0, 0, 0, 0.52);
+  --color-input-bg: #141820;
+  --color-input-border: #2C3340;
+  --color-input-placeholder: #8B95A6;
 
   /* Text */
-  /* Both greys clear 4.5:1 on the base and elevated charcoal surfaces. */
   --color-text: #F4F5F2;
-  --color-text-secondary: #9CA6B4;
-  --color-muted: #8E98A7;
+  --color-text-secondary: #B4BCC8;
+  --color-muted: #8E97A4;
 
   /* Borders */
-  --color-border: #252C38;
-  --color-border-strong: #394354;
+  --color-border: #262C36;
+  --color-border-strong: #394252;
 
-  /* Accent and actions */
+  /* Accent and actions (Safety Orange) */
   --color-accent: #FF5F00;
-  --color-accent-hover: #FF7A26;
-  --color-accent-pressed: #E65400;
-  --color-accent-text: #171C24;
+  --color-accent-hover: #FF7724;
+  --color-accent-pressed: #E65500;
+  --color-accent-text: #111318;
   --color-accent-soft: #FF8A3D;
-  /* Accent for normal-sized text. The bright accent stays for fills, borders
-     and icons; text uses this value so light-theme links clear 4.5:1. */
-  --color-accent-accessible: #FF5F00;
+  --color-accent-accessible: #FF8533;
   --color-success: #258B63;
   --color-success-text: #4FBF8F;
   --color-danger: #E5605B;
   --color-danger-text: #FF9B96;
-  --color-focus-ring: #FF8A3D;
+  --color-focus-ring: #FF8533;
 
   /* Buttons */
   --button-primary-bg: var(--color-accent);
@@ -86,7 +98,7 @@ html[data-theme='dark'] {
   --button-primary-pressed-bg: var(--color-accent-pressed);
   --button-primary-text: var(--color-accent-text);
   --button-secondary-bg: var(--color-surface-elevated);
-  --button-secondary-hover-bg: var(--color-border);
+  --button-secondary-hover-bg: var(--color-border-strong);
   --button-secondary-border: var(--color-border);
   --button-secondary-text: var(--color-text);
   --button-danger-text: var(--color-danger-text);
@@ -106,29 +118,23 @@ html[data-theme='dark'] {
   --status-cancelled: var(--color-muted);
   --status-skipped: var(--color-muted);
   --status-planned-bg: rgba(255, 95, 0, 0.14);
-  --status-in-progress-bg: rgba(255, 95, 0, 0.18);
+  --status-in-progress-bg: rgba(255, 138, 61, 0.16);
   --status-completed-bg: rgba(37, 139, 99, 0.18);
-  --status-cancelled-bg: rgba(120, 129, 140, 0.14);
+  --status-cancelled-bg: rgba(142, 151, 164, 0.14);
 
-  /* Focus */
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
-  --focus-outline: var(--focus-ring-width) solid var(--color-focus-ring);
-
-  /* Depth (dark): orange key light over a cool slate fill, with pure-black
-     contact shadows so no extra hue competes with the accent. */
+  /* Depth (dark) */
   --elevation-1: inset 0 1px 0 var(--bevel-highlight-color),
-    0 1px 2px rgba(0, 0, 0, 0.22), 0 6px 16px rgba(0, 0, 0, 0.16);
+    0 1px 2px rgba(0, 0, 0, 0.34), 0 8px 20px rgba(0, 0, 0, 0.26);
   --elevation-2: inset 0 1px 0 var(--bevel-highlight-color),
-    0 2px 4px rgba(0, 0, 0, 0.26), 0 12px 28px rgba(0, 0, 0, 0.24);
+    0 2px 6px rgba(0, 0, 0, 0.38), 0 16px 36px rgba(0, 0, 0, 0.36);
   --elevation-3: inset 0 1px 0 var(--bevel-highlight-color),
-    0 4px 8px rgba(0, 0, 0, 0.3), 0 20px 44px rgba(0, 0, 0, 0.34);
-  --bevel-highlight-color: rgba(255, 255, 255, 0.07);
-  --ambient-key: rgba(255, 95, 0, 0.16);
-  --ambient-fill: rgba(139, 149, 161, 0.1);
-  --ambient-shadow: rgba(0, 0, 0, 0.34);
+    0 6px 12px rgba(0, 0, 0, 0.44), 0 24px 52px rgba(0, 0, 0, 0.48);
+  --bevel-highlight-color: rgba(244, 245, 242, 0.06);
+  --ambient-key: rgba(255, 95, 0, 0.12);
+  --ambient-fill: rgba(255, 255, 255, 0.05);
+  --ambient-shadow: rgba(0, 0, 0, 0.46);
 
-  /* Compatibility aliases for the existing index.css variables */
+  /* Compatibility aliases */
   --bg: var(--color-bg);
   --surface: var(--color-surface);
   --surface-2: var(--color-surface-secondary);
@@ -152,7 +158,7 @@ html[data-theme='dark'] {
   --input-placeholder: var(--color-input-placeholder);
 }
 
-/* Light theme (existing toggle) */
+/* Light theme (Clean Studio Stone + Safety Orange) */
 html[data-theme='light'] {
   color-scheme: light;
 
@@ -163,43 +169,41 @@ html[data-theme='light'] {
   --color-nav-bg: rgba(241, 242, 244, 0.94);
   --color-nav-shadow: rgba(17, 18, 22, 0.08);
   --color-input-bg: #FFFFFF;
-  --color-input-border: #D5D7DC;
-  --color-input-placeholder: #667085;
+  --color-input-border: #CBD0D8;
+  --color-input-placeholder: #646D7A;
 
-  --color-text: #171C24;
-  --color-text-secondary: #4F5864;
-  --color-muted: #78818C;
+  --color-text: #171717;
+  --color-text-secondary: #49515E;
+  --color-muted: #646D7A;
 
   --color-border: #D7D9DE;
-  --color-border-strong: #B4BAC4;
+  --color-border-strong: #B8BDC7;
 
   --color-accent: #FF5F00;
-  --color-accent-hover: #FF7A26;
-  --color-accent-pressed: #E65400;
-  --color-accent-text: #171C24;
-  --color-accent-soft: #B93F00;
+  --color-accent-hover: #E65500;
+  --color-accent-pressed: #CC4B00;
+  --color-accent-text: #FFFFFF;
+  --color-accent-soft: #B23C00;
   --color-accent-accessible: #B23C00;
-  --color-success: #258B63;
-  --color-success-text: #1F7A56;
+  --color-success: #1D7552;
+  --color-success-text: #166143;
   --color-danger: #B83A3A;
-  --color-danger-text: #A52F2F;
-  --color-focus-ring: #C2410C;
+  --color-danger-text: #9E2B2B;
+  --color-focus-ring: #FF5F00;
 
-  --status-planned-bg: rgba(255, 95, 0, 0.1);
-  --status-in-progress-bg: rgba(255, 95, 0, 0.14);
-  --status-completed-bg: rgba(37, 139, 99, 0.12);
-  --status-cancelled-bg: rgba(120, 129, 140, 0.08);
+  --status-planned-bg: rgba(255, 95, 0, 0.12);
+  --status-in-progress-bg: rgba(255, 95, 0, 0.16);
+  --status-completed-bg: rgba(29, 117, 82, 0.12);
+  --status-cancelled-bg: rgba(100, 109, 122, 0.1);
 
-  /* Depth (light): warm-white bevels and shallow, slate-tinted contact
-     shadows; dark-theme shadows are not reused because they read as mud here. */
   --elevation-1: inset 0 1px 0 var(--bevel-highlight-color),
-    0 1px 2px rgba(23, 28, 36, 0.05), 0 4px 12px rgba(23, 28, 36, 0.06);
+    0 1px 2px rgba(17, 18, 22, 0.04), 0 6px 16px rgba(17, 18, 22, 0.05);
   --elevation-2: inset 0 1px 0 var(--bevel-highlight-color),
-    0 2px 4px rgba(23, 28, 36, 0.06), 0 10px 24px rgba(23, 28, 36, 0.09);
+    0 2px 6px rgba(17, 18, 22, 0.05), 0 12px 28px rgba(17, 18, 22, 0.08);
   --elevation-3: inset 0 1px 0 var(--bevel-highlight-color),
-    0 4px 8px rgba(23, 28, 36, 0.07), 0 18px 40px rgba(23, 28, 36, 0.13);
-  --bevel-highlight-color: rgba(255, 255, 255, 0.9);
-  --ambient-key: rgba(255, 95, 0, 0.08);
-  --ambient-fill: rgba(79, 88, 100, 0.06);
-  --ambient-shadow: rgba(23, 28, 36, 0.14);
+    0 6px 12px rgba(17, 18, 22, 0.06), 0 20px 44px rgba(17, 18, 22, 0.12);
+  --bevel-highlight-color: rgba(255, 255, 255, 0.85);
+  --ambient-key: rgba(255, 95, 0, 0.09);
+  --ambient-fill: rgba(17, 18, 22, 0.04);
+  --ambient-shadow: rgba(17, 18, 22, 0.14);
 }

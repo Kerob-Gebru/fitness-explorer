@@ -72,17 +72,23 @@ export default function HomePage() {
     <header className="studio-lead">
       <div className="studio-lead__top">
         <p className="eyebrow">YOUR FITNESS STUDIO</p>
+        <span className="studio-lead__sep" aria-hidden="true">·</span>
         <time className="dashboard-home__date" dateTime={localDateKey(currentDate)}>{today}</time>
       </div>
-      <h1 id="dashboard-title">Find your stronger side.</h1>
+      <h1 id="dashboard-title" className="display">
+        <span>FIND YOUR </span>
+        <em>stronger</em>
+        <span> SIDE.</span>
+      </h1>
       <p className="muted studio-lead__subtitle">
         A little movement. A lot of momentum. Inspect your weekly muscle distribution and jump straight into training.
       </p>
       <div className="dashboard-home__hero-actions">
-        <Link className="btn btn--primary" to={activeSession ? '/workout/session' : '/workout'}>
-          {nextWorkoutLabel} <span aria-hidden="true">↗</span>
+        <Link className="btn btn--primary glint" to={activeSession ? '/workout/session' : '/workout'}>
+          <span className="glint__label">{nextWorkoutLabel}</span>
+          <span className="glint__label" aria-hidden="true">↗</span>
         </Link>
-        <Link className="btn" to="/explore">Explore exercises</Link>
+        <Link className="btn btn--ghost" to="/explore">Explore exercises</Link>
       </div>
     </header>
   )
@@ -93,7 +99,9 @@ export default function HomePage() {
         <div className="studio-telemetry__head">
           <div>
             <p className="eyebrow">ACTIVITY SNAPSHOT</p>
-            <h2 id="dashboard-overview-title">Training overview</h2>
+            <h2 id="dashboard-overview-title" className="display">
+              Training <em>overview</em>
+            </h2>
           </div>
           <p className="muted studio-telemetry__summary">
             {stats.weeklyWorkouts === 0
@@ -105,19 +113,19 @@ export default function HomePage() {
         <dl className="studio-telemetry__metrics">
           <div className="studio-metric">
             <dt>Completed</dt>
-            <dd>{stats.totalWorkouts}</dd>
+            <dd className="display">{stats.totalWorkouts}</dd>
           </div>
           <div className="studio-metric">
             <dt>This week</dt>
-            <dd>{stats.weeklyWorkouts}</dd>
+            <dd className="display">{stats.weeklyWorkouts}</dd>
           </div>
           <div className="studio-metric">
             <dt>Current streak</dt>
-            <dd>{stats.currentStreak}<span> {stats.currentStreak === 1 ? 'day' : 'days'}</span></dd>
+            <dd className="display">{stats.currentStreak}<span> {stats.currentStreak === 1 ? 'day' : 'days'}</span></dd>
           </div>
           <div className="studio-metric">
             <dt>Saved plans</dt>
-            <dd>{plans.length}</dd>
+            <dd className="display">{plans.length}</dd>
           </div>
         </dl>
       </div>
@@ -126,9 +134,11 @@ export default function HomePage() {
         <div className="studio-telemetry__head">
           <div>
             <p className="eyebrow">MONDAY – SUNDAY</p>
-            <h2 id="dashboard-weekly-title">Weekly cadence</h2>
+            <h2 id="dashboard-weekly-title" className="display">
+              Weekly <em>cadence</em>
+            </h2>
           </div>
-          <span className="muted">{stats.weeklyWorkouts} completed</span>
+          <span className="muted studio-telemetry__cadence-count">{stats.weeklyWorkouts} completed</span>
         </div>
         <div
           className="activity-chart studio-telemetry__chart"
@@ -157,172 +167,235 @@ export default function HomePage() {
           data={focusData}
           onExploreZone={openFocusZone}
           leadContent={studioLead}
-          telemetryContent={studioTelemetry}
         />
 
-        <div className="dashboard-home__goals">
-          <GoalProgressPanel stats={stats} />
-
-          <section className="dashboard-home__panel dashboard-home__streak" aria-labelledby="dashboard-streak-title">
-            <div className="dashboard-section-heading">
-              <div><p className="eyebrow">CONSISTENCY & VOLUME</p><h2 id="dashboard-streak-title">All-time momentum</h2></div>
-              <Link to="/progress">View analytics ↗</Link>
+        <div id="dashboard-sheet" className="dashboard-sheet">
+          <header className="dashboard-sheet__intro">
+            <div>
+              <p className="eyebrow">THE TRAINING SYSTEM</p>
+              <h2 className="display dashboard-sheet__headline">
+                <span className="dashboard-sheet__roman">YOUR WEEKLY</span>{' '}
+                <em>momentum</em>
+              </h2>
             </div>
-            <div className="dashboard-home__streak-stats">
-              <article className="dashboard-stat">
-                <span className="dashboard-stat__icon" aria-hidden="true">★</span>
-                <div>
-                  <p className="muted">Longest streak</p>
-                  <strong>{stats.longestStreak}<small> {stats.longestStreak === 1 ? 'day' : 'days'}</small></strong>
-                </div>
-              </article>
-              <article className="dashboard-stat">
-                <span className="dashboard-stat__icon" aria-hidden="true">✓</span>
-                <div>
-                  <p className="muted">Exercises done</p>
-                  <strong>{stats.exercisesCompleted}</strong>
-                </div>
-              </article>
-            </div>
-          </section>
-        </div>
+            <p className="muted dashboard-sheet__copy">
+              Goals, recent sessions, saved plans, and scheduled workouts organized in a calm charcoal &amp; orange studio sheet.
+            </p>
+          </header>
 
-        <div className="dashboard-home__pipeline">
-          <section className="dashboard-home__panel" aria-labelledby="dashboard-recent-title">
-            <div className="dashboard-section-heading">
-              <div><p className="eyebrow">COMPLETED SESSIONS</p><h2 id="dashboard-recent-title">Recent workouts</h2></div>
-              <Link to="/workout#history">History</Link>
-            </div>
-            {recentSessions.length > 0 ? (
-              <ul className="dashboard-home__list">
-                {recentSessions.map((session) => (
-                  <li key={session.id}>
-                    <div><strong>{session.name}</strong><span className="muted">{formatSessionDate(session.completedAt)}</span></div>
-                    <span className="dashboard-home__session-meta">
-                      {Array.isArray(session.exercises) ? `${session.exercises.length} exercise${session.exercises.length === 1 ? '' : 's'}` : ''}
-                      {Number.isFinite(session.durationSeconds) && session.durationSeconds >= 0
-                        ? `${Array.isArray(session.exercises) ? ' · ' : ''}${Math.floor(session.durationSeconds / 60)} min`
-                        : ''}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted dashboard-home__empty">No completed workouts yet. Your finished sessions will show up here.</p>
-            )}
-          </section>
-
-          <section className="dashboard-home__panel" aria-labelledby="dashboard-plans-title">
-            <div className="dashboard-section-heading">
-              <div><p className="eyebrow">READY WHEN YOU ARE</p><h2 id="dashboard-plans-title">Saved plans</h2></div>
-              <Link to="/workout#plans">View all</Link>
-            </div>
-            {plans.length > 0 ? (
-              <ul className="dashboard-home__list">
-                {plans.slice(0, 3).map((plan) => (
-                  <li key={plan.id}>
-                    <div><strong>{plan.name}</strong><span className="muted">{plan.exercises.length} exercise{plan.exercises.length === 1 ? '' : 's'}</span></div>
-                    <Link className="btn dashboard-home__view-plan" to="/workout#plans" aria-label={`View ${plan.name} plan`}>View</Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="dashboard-home__empty">
-                <p className="muted">No saved plans yet. Build a routine and save it for repeat sessions.</p>
-                <Link to="/explore">Find exercises to build a plan</Link>
-              </div>
-            )}
-          </section>
-
-          <section className="dashboard-home__panel dashboard-home__upcoming" aria-labelledby="dashboard-upcoming-title">
-            <div className="dashboard-section-heading">
-              <div><p className="eyebrow">ON YOUR CALENDAR</p><h2 id="dashboard-upcoming-title">Upcoming workouts</h2></div>
-              <Link to="/calendar">Calendar</Link>
-            </div>
-            {upcomingWorkouts.length > 0 ? (
-              <ul className="dashboard-home__list">
-                {upcomingWorkouts.map((workout) => (
-                  <li key={workout.id}>
-                    <div><strong>{workout.name}</strong><span className="muted">{formatDateKey(workout.date, { dateStyle: 'medium' })}{workout.time ? ` · ${workout.time}` : ''} · {workout.status === 'in-progress' ? 'In progress' : 'Planned'}</span></div>
-                    <Link className="btn dashboard-home__view-plan" to={`/calendar?workout=${encodeURIComponent(workout.id)}`} aria-label={`Open ${workout.name} in calendar`}>Open</Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="dashboard-home__empty">
-                <p className="muted">No workouts scheduled yet.</p>
-                <Link to="/calendar">Schedule a saved plan</Link>
-              </div>
-            )}
-          </section>
-        </div>
-
-        <section className="dashboard-home__quick" aria-labelledby="dashboard-quick-title">
-          <div className="dashboard-section-heading">
-            <div><p className="eyebrow">QUICK ACCESS</p><h2 id="dashboard-quick-title">Jump back in</h2></div>
+          <div className="dashboard-home__panel dashboard-sheet__telemetry">
+            {studioTelemetry}
           </div>
-          <div className="dashboard-home__actions" aria-label="Quick navigation">
-            <Link className="btn" to="/explore">Explore exercises</Link>
-            <Link className="btn" to="/calendar">Workout calendar</Link>
-            <Link className="btn" to="/progress">Progress analytics</Link>
-            <Link className="btn" to="/favorites">Favorites</Link>
-          </div>
-        </section>
-      </section>
 
-      <section className="section" aria-labelledby="discovery-title">
-        <div className="section__head"><div><p className="eyebrow">DISCOVER</p><h2 id="discovery-title">Find your next exercise</h2></div><Link to="/explore">Browse all exercises</Link></div>
-        <div className="hero dashboard-home__discovery">
-          <p className="hero__text">
-            Search by name, narrow by muscle or equipment, and keep the exercises you want to come back to.
-          </p>
-          <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} />
-          <p className="hero__link">or <Link to="/explore">browse the full exercise library</Link></p>
+          <div className="dashboard-home__goals">
+            <GoalProgressPanel stats={stats} />
+
+            <section className="dashboard-home__panel dashboard-home__streak" aria-labelledby="dashboard-streak-title">
+              <div className="dashboard-section-heading">
+                <div>
+                  <p className="eyebrow">CONSISTENCY &amp; VOLUME</p>
+                  <h2 id="dashboard-streak-title" className="display">All-time <em>momentum</em></h2>
+                </div>
+                <Link to="/progress">View analytics ↗</Link>
+              </div>
+              <div className="dashboard-home__streak-stats">
+                <article className="dashboard-stat">
+                  <span className="dashboard-stat__icon" aria-hidden="true">★</span>
+                  <div>
+                    <p className="muted">Longest streak</p>
+                    <strong className="display">{stats.longestStreak}<small> {stats.longestStreak === 1 ? 'day' : 'days'}</small></strong>
+                  </div>
+                </article>
+                <article className="dashboard-stat">
+                  <span className="dashboard-stat__icon" aria-hidden="true">✓</span>
+                  <div>
+                    <p className="muted">Exercises done</p>
+                    <strong className="display">{stats.exercisesCompleted}</strong>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div className="dashboard-home__pipeline">
+            <section className="dashboard-home__panel" aria-labelledby="dashboard-recent-title">
+              <div className="dashboard-section-heading">
+                <div>
+                  <p className="eyebrow">01 · COMPLETED SESSIONS</p>
+                  <h2 id="dashboard-recent-title" className="display">Recent <em>workouts</em></h2>
+                </div>
+                <Link to="/workout#history">History</Link>
+              </div>
+              {recentSessions.length > 0 ? (
+                <ul className="dashboard-home__list">
+                  {recentSessions.map((session) => (
+                    <li key={session.id}>
+                      <div><strong>{session.name}</strong><span className="muted">{formatSessionDate(session.completedAt)}</span></div>
+                      <span className="dashboard-home__session-meta">
+                        {Array.isArray(session.exercises) ? `${session.exercises.length} exercise${session.exercises.length === 1 ? '' : 's'}` : ''}
+                        {Number.isFinite(session.durationSeconds) && session.durationSeconds >= 0
+                          ? `${Array.isArray(session.exercises) ? ' · ' : ''}${Math.floor(session.durationSeconds / 60)} min`
+                          : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted dashboard-home__empty">No completed workouts yet. Your finished sessions will show up here.</p>
+              )}
+            </section>
+
+            <section className="dashboard-home__panel" aria-labelledby="dashboard-plans-title">
+              <div className="dashboard-section-heading">
+                <div>
+                  <p className="eyebrow">02 · READY WHEN YOU ARE</p>
+                  <h2 id="dashboard-plans-title" className="display">Saved <em>plans</em></h2>
+                </div>
+                <Link to="/workout#plans">View all</Link>
+              </div>
+              {plans.length > 0 ? (
+                <ul className="dashboard-home__list">
+                  {plans.slice(0, 3).map((plan) => (
+                    <li key={plan.id}>
+                      <div><strong>{plan.name}</strong><span className="muted">{plan.exercises.length} exercise{plan.exercises.length === 1 ? '' : 's'}</span></div>
+                      <Link className="btn dashboard-home__view-plan" to="/workout#plans" aria-label={`View ${plan.name} plan`}>View</Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="dashboard-home__empty">
+                  <p className="muted">No saved plans yet. Build a routine and save it for repeat sessions.</p>
+                  <Link to="/explore">Find exercises to build a plan</Link>
+                </div>
+              )}
+            </section>
+
+            <section className="dashboard-home__panel dashboard-home__upcoming" aria-labelledby="dashboard-upcoming-title">
+              <div className="dashboard-section-heading">
+                <div>
+                  <p className="eyebrow">03 · ON YOUR CALENDAR</p>
+                  <h2 id="dashboard-upcoming-title" className="display">Upcoming <em>workouts</em></h2>
+                </div>
+                <Link to="/calendar">Calendar</Link>
+              </div>
+              {upcomingWorkouts.length > 0 ? (
+                <ul className="dashboard-home__list">
+                  {upcomingWorkouts.map((workout) => (
+                    <li key={workout.id}>
+                      <div><strong>{workout.name}</strong><span className="muted">{formatDateKey(workout.date, { dateStyle: 'medium' })}{workout.time ? ` · ${workout.time}` : ''} · {workout.status === 'in-progress' ? 'In progress' : 'Planned'}</span></div>
+                      <Link className="btn dashboard-home__view-plan" to={`/calendar?workout=${encodeURIComponent(workout.id)}`} aria-label={`Open ${workout.name} in calendar`}>Open</Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="dashboard-home__empty">
+                  <p className="muted">No workouts scheduled yet.</p>
+                  <Link to="/calendar">Schedule a saved plan</Link>
+                </div>
+              )}
+            </section>
+          </div>
+
+          <section className="dashboard-home__quick" aria-labelledby="dashboard-quick-title">
+            <div className="dashboard-section-heading">
+              <div>
+                <p className="eyebrow">QUICK ACCESS</p>
+                <h2 id="dashboard-quick-title" className="display">Jump <em>back in</em></h2>
+              </div>
+            </div>
+            <div className="dashboard-home__actions" aria-label="Quick navigation">
+              <Link className="btn" to="/explore">Explore exercises</Link>
+              <Link className="btn" to="/calendar">Workout calendar</Link>
+              <Link className="btn" to="/progress">Progress analytics</Link>
+              <Link className="btn" to="/favorites">Favorites</Link>
+            </div>
+          </section>
+
+          <section className="section dashboard-sheet__discovery-wrap" aria-labelledby="discovery-title">
+            <div className="hero dashboard-home__discovery">
+              <div className="dashboard-home__discovery-head">
+                <div>
+                  <p className="eyebrow">DISCOVER · EXERCISE ARCHIVE</p>
+                  <h2 id="discovery-title" className="display">
+                    Find your next <em>exercise</em>
+                  </h2>
+                </div>
+                <Link className="dashboard-home__discovery-all" to="/explore">Browse all ↗</Link>
+              </div>
+              <p className="hero__text">
+                Search by name, narrow by muscle or equipment, and keep the exercises you want to come back to.
+              </p>
+              <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} />
+              <p className="hero__link">or <Link to="/explore">browse the full exercise library</Link></p>
+            </div>
+          </section>
+
+          {loading && <Loader label="Loading exercises..." />}
+          {error && <ErrorMessage error={error} onRetry={retry} />}
+
+          {exercises && (
+            <>
+              <section className="section" aria-labelledby="categories-title">
+                <div className="section__head">
+                  <div>
+                    <p className="eyebrow">BY ANATOMY</p>
+                    <h2 id="categories-title" className="display">Train by <em>body part</em></h2>
+                  </div>
+                  <Link to="/explore">Full library ↗</Link>
+                </div>
+                <ul className="categories">
+                  {categories.map(([bodyPart, count], index) => (
+                    <li key={bodyPart}>
+                      <Link to="/explore" className="category" onClick={() => openCategory(bodyPart)}>
+                        <span className="category__index" aria-hidden="true">N°{String(index + 1).padStart(2, '0')}</span>
+                        <span className="category__name display">{formatLabel(bodyPart)}</span>
+                        <span className="category__count">{count} {count === 1 ? 'exercise' : 'exercises'}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {recentExercises.length > 0 && (
+                <section className="section" aria-labelledby="recent-title">
+                  <div className="section__head">
+                    <div>
+                      <p className="eyebrow">PICK UP WHERE YOU LEFT OFF</p>
+                      <h2 id="recent-title" className="display">Recently <em>viewed</em></h2>
+                    </div>
+                    <Link to="/explore">Explore more ↗</Link>
+                  </div>
+                  <ExerciseGrid exercises={recentExercises.slice(0, 3)} />
+                </section>
+              )}
+
+              {favorites.length > 0 && (
+                <section className="section" aria-labelledby="home-favorites-title">
+                  <div className="section__head">
+                    <div>
+                      <p className="eyebrow">YOUR PERSONAL COLLECTION</p>
+                      <h2 id="home-favorites-title" className="display">Saved <em>for later</em></h2>
+                    </div>
+                    <Link to="/favorites">View favorites ↗</Link>
+                  </div>
+                  <ExerciseGrid exercises={favorites.slice(0, 3)} />
+                </section>
+              )}
+
+              <section className="section" aria-labelledby="featured-title">
+                <div className="section__head">
+                  <div>
+                    <p className="eyebrow">CURATED SELECTION</p>
+                    <h2 id="featured-title" className="display">Featured <em>exercises</em></h2>
+                  </div>
+                  <Link to="/explore">See all ↗</Link>
+                </div>
+                <ExerciseGrid exercises={pickFeatured(exercises, 6)} />
+              </section>
+            </>
+          )}
         </div>
       </section>
-
-      {loading && <Loader label="Loading exercises..." />}
-      {error && <ErrorMessage error={error} onRetry={retry} />}
-
-      {exercises && (
-        <>
-          <section className="section" aria-labelledby="categories-title">
-            <h2 id="categories-title">Train by body part</h2>
-            <ul className="categories">
-              {categories.map(([bodyPart, count]) => (
-                <li key={bodyPart}>
-                  <Link to="/explore" className="category" onClick={() => openCategory(bodyPart)}>
-                    <span className="category__name">{formatLabel(bodyPart)}</span>
-                    <span className="category__count">{count} {count === 1 ? 'exercise' : 'exercises'}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {recentExercises.length > 0 && (
-            <section className="section" aria-labelledby="recent-title">
-              <div className="section__head"><div><p className="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h2 id="recent-title">Recently viewed</h2></div><Link to="/explore">Explore more</Link></div>
-              <ExerciseGrid exercises={recentExercises.slice(0, 3)} />
-            </section>
-          )}
-
-          {favorites.length > 0 && (
-            <section className="section" aria-labelledby="home-favorites-title">
-              <div className="section__head"><div><p className="eyebrow">YOUR PERSONAL COLLECTION</p><h2 id="home-favorites-title">Saved for later</h2></div><Link to="/favorites">View favorites</Link></div>
-              <ExerciseGrid exercises={favorites.slice(0, 3)} />
-            </section>
-          )}
-
-          <section className="section" aria-labelledby="featured-title">
-            <div className="section__head">
-              <h2 id="featured-title">Featured exercises</h2>
-              <Link to="/explore">See all</Link>
-            </div>
-            <ExerciseGrid exercises={pickFeatured(exercises, 6)} />
-          </section>
-        </>
-      )}
     </>
   )
 }

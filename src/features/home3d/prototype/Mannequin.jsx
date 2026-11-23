@@ -2,15 +2,19 @@ import { useMemo } from 'react'
 import { getAnatomyGeometries } from './anatomyGeometry.js'
 import { getZoneAppearance } from './mannequinMaterials.js'
 
-function BaseMaterial({ palette, secondary = false }) {
+function BaseMaterial({ palette, apparel = false }) {
   return (
     <meshPhysicalMaterial
-      color={secondary ? palette.bodySecondary : palette.body}
-      roughness={palette.roughness + 0.14}
-      metalness={palette.metalness}
-      clearcoat={(palette.clearcoat ?? 0.14) * 0.45}
-      clearcoatRoughness={0.62}
-      envMapIntensity={palette.envMapIntensity ?? 0.48}
+      color={apparel ? palette.bodySecondary : palette.body}
+      roughness={apparel ? Math.min(0.84, palette.roughness + 0.16) : palette.roughness + 0.04}
+      metalness={apparel ? 0.01 : palette.metalness}
+      clearcoat={apparel ? 0 : (palette.clearcoat ?? 0.04)}
+      clearcoatRoughness={palette.clearcoatRoughness ?? 0.72}
+      sheen={apparel ? 0.08 : (palette.sheen ?? 0.2)}
+      sheenRoughness={0.68}
+      sheenColor={palette.sheenColor ?? '#DDD6CE'}
+      envMapIntensity={apparel ? 0.25 : (palette.envMapIntensity ?? 0.4)}
+      vertexColors
     />
   )
 }
@@ -60,11 +64,15 @@ export default function Mannequin({
         color={appearance.color}
         emissive={palette.emissive}
         emissiveIntensity={appearance.emissiveIntensity}
-        roughness={isSelected ? Math.max(0.32, palette.roughness - 0.18) : isHovered ? Math.max(0.38, palette.roughness - 0.12) : palette.roughness}
-        metalness={isSelected || isActive ? palette.metalness + 0.06 : palette.metalness}
-        clearcoat={isSelected ? 0.34 : isHovered ? 0.26 : palette.clearcoat ?? 0.16}
-        clearcoatRoughness={isSelected ? 0.32 : palette.clearcoatRoughness ?? 0.48}
-        envMapIntensity={palette.envMapIntensity ?? 0.52}
+        roughness={isSelected ? Math.max(0.46, palette.roughness - 0.14) : isHovered ? Math.max(0.5, palette.roughness - 0.1) : palette.roughness}
+        metalness={isSelected || isActive ? palette.metalness + 0.02 : palette.metalness}
+        clearcoat={isSelected ? 0.12 : isHovered ? 0.08 : (palette.clearcoat ?? 0.04)}
+        clearcoatRoughness={isSelected ? 0.52 : (palette.clearcoatRoughness ?? 0.72)}
+        sheen={isSelected ? 0.28 : (palette.sheen ?? 0.2)}
+        sheenRoughness={0.62}
+        sheenColor={palette.sheenColor ?? '#DDD6CE'}
+        envMapIntensity={palette.envMapIntensity ?? 0.42}
+        vertexColors
       />
     )
   }
@@ -80,24 +88,24 @@ export default function Mannequin({
       <mesh geometry={anatomy.base.head} castShadow receiveShadow>
         <BaseMaterial palette={palette} />
       </mesh>
+      <mesh geometry={anatomy.base.hair} castShadow receiveShadow>
+        <BaseMaterial palette={palette} apparel />
+      </mesh>
       <mesh geometry={anatomy.base.neck} castShadow receiveShadow>
-        <BaseMaterial palette={palette} secondary />
+        <BaseMaterial palette={palette} />
       </mesh>
       <mesh geometry={anatomy.base.torso} castShadow receiveShadow>
         <BaseMaterial palette={palette} />
       </mesh>
-
-      {anatomy.base.hands.map((geometry, index) => (
-        <mesh key={`hand-${index}`} geometry={geometry} castShadow receiveShadow>
-          <BaseMaterial palette={palette} secondary />
-        </mesh>
-      ))}
-
-      {anatomy.base.feet.map((geometry, index) => (
-        <mesh key={`foot-${index}`} geometry={geometry} castShadow receiveShadow>
-          <BaseMaterial palette={palette} secondary />
-        </mesh>
-      ))}
+      <mesh geometry={anatomy.base.briefs} castShadow receiveShadow>
+        <BaseMaterial palette={palette} apparel />
+      </mesh>
+      <mesh geometry={anatomy.base.hands} castShadow receiveShadow>
+        <BaseMaterial palette={palette} />
+      </mesh>
+      <mesh geometry={anatomy.base.feet} castShadow receiveShadow>
+        <BaseMaterial palette={palette} />
+      </mesh>
 
       {Object.entries(anatomy.zones).map(([zone, geometries]) => (
         <ZoneGroup key={zone} {...zoneProps(zone)}>

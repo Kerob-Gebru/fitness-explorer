@@ -4,28 +4,27 @@ import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import Mannequin from './prototype/Mannequin.jsx'
 import { FIGURE_THEMES } from './prototype/mannequinMaterials.js'
+import {
+  getDefaultWidePose,
+  getZoneCameraPose,
+  sampleCinemaPose,
+  shortestAngleDiff,
+} from './studioTimeline.js'
 import './focusFigure3d.css'
 
-const YAW_SPEED = 0.008
-const PITCH_SPEED = 0.004
-const PITCH_LIMIT = 0.34
+const YAW_SPEED = 0.0085
+const PITCH_SPEED = 0.0042
+const PITCH_LIMIT = 0.36
 const CLICK_SLOP = 6
 
 const VIEW_PRESETS = {
-  front: { yaw: 0, pitch: 0.04 },
-  back: { yaw: Math.PI, pitch: 0.04 },
-  reset: { yaw: -0.42, pitch: 0.04 },
+  front: { yaw: 0, pitch: 0.02 },
+  back: { yaw: Math.PI, pitch: 0.02 },
+  reset: { yaw: -0.36, pitch: 0.03 },
 }
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
-}
-
-function shortestAngleDiff(current, target) {
-  let diff = (target - current) % (Math.PI * 2)
-  if (diff > Math.PI) diff -= Math.PI * 2
-  if (diff < -Math.PI) diff += Math.PI * 2
-  return diff
 }
 
 function detectSoftwareWebGL() {
@@ -52,10 +51,10 @@ function createContactShadowTexture() {
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
 
-  const gradient = ctx.createRadialGradient(128, 128, 10, 128, 128, 124)
-  gradient.addColorStop(0, 'rgba(0, 0, 0, 0.56)')
-  gradient.addColorStop(0.42, 'rgba(0, 0, 0, 0.24)')
-  gradient.addColorStop(0.78, 'rgba(0, 0, 0, 0.05)')
+  const gradient = ctx.createRadialGradient(128, 128, 6, 128, 128, 124)
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0.44)')
+  gradient.addColorStop(0.45, 'rgba(0, 0, 0, 0.16)')
+  gradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.04)')
   gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, 256, 256)
@@ -73,14 +72,14 @@ function StudioFloor({ palette, isSoftwareGl }) {
   }, [shadowTexture])
 
   return (
-    <group position={[0, -1.356, 0]}>
+    <group position={[0, -1.358, 0]}>
       {shadowTexture && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
-          <planeGeometry args={[2.1, 1.5]} />
+          <planeGeometry args={[1.8, 1.25]} />
           <meshBasicMaterial
             map={shadowTexture}
             transparent
-            opacity={palette === FIGURE_THEMES.light ? 0.42 : 0.88}
+            opacity={palette === FIGURE_THEMES.light ? 0.34 : 0.76}
             depthWrite={false}
           />
         </mesh>
@@ -88,27 +87,27 @@ function StudioFloor({ palette, isSoftwareGl }) {
 
       {!isSoftwareGl && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.002, 0]}>
-          <planeGeometry args={[4.5, 4.5]} />
-          <shadowMaterial transparent opacity={palette === FIGURE_THEMES.light ? 0.16 : 0.34} />
+          <planeGeometry args={[4.4, 4.4]} />
+          <shadowMaterial transparent opacity={palette === FIGURE_THEMES.light ? 0.12 : 0.26} />
         </mesh>
       )}
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
-        <ringGeometry args={[0.74, 0.76, 64]} />
+        <ringGeometry args={[0.66, 0.676, 72]} />
         <meshBasicMaterial
           color={palette.pedestalRing}
           transparent
-          opacity={palette === FIGURE_THEMES.light ? 0.55 : 0.65}
+          opacity={palette === FIGURE_THEMES.light ? 0.45 : 0.58}
           depthWrite={false}
         />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, -Math.PI * 0.72]} position={[0, 0.004, 0]}>
-        <ringGeometry args={[0.742, 0.758, 40, 1, 0, Math.PI * 0.44]} />
+        <ringGeometry args={[0.662, 0.676, 48, 1, 0, Math.PI * 0.46]} />
         <meshBasicMaterial
           color={palette.pedestalAccent}
           transparent
-          opacity={palette === FIGURE_THEMES.light ? 0.48 : 0.72}
+          opacity={palette === FIGURE_THEMES.light ? 0.48 : 0.75}
           depthWrite={false}
         />
       </mesh>
@@ -121,8 +120,13 @@ function SceneContent({
   counts,
   view,
   viewNonce,
+  compact,
+  cinemaEnabled,
   mannequinRef,
-  targetRotationRef,
+  cameraGoalRef,
+  manualDragRef,
+  scrollProgressRef,
+  invalidateRef,
   hoveredZone,
   selectedZone,
   isSoftwareGl,
@@ -130,7 +134,18 @@ function SceneContent({
   onSelectZone,
   onFailure,
 }) {
-  const { gl, scene, invalidate } = useThree()
+  const { gl, scene, camera, invalidate } = useThree()
+  const currentTargetRef = useRef(new THREE.Vector3(0, 0.145, 0))
+  const tempPosRef = useRef(new THREE.Vector3())
+  const tempTargetRef = useRef(new THREE.Vector3())
+  const lastViewNonceRef = useRef(viewNonce)
+
+  useEffect(() => {
+    invalidateRef.current = invalidate
+    return () => {
+      if (invalidateRef.current === invalidate) invalidateRef.current = null
+    }
+  }, [invalidate, invalidateRef])
 
   useEffect(() => {
     const canvas = gl.domElement
@@ -155,41 +170,116 @@ function SceneContent({
     }
   }, [envRenderTarget, invalidate])
 
+  // Sync camera goal whenever selectedZone, explicit view buttons, or compact mode changes.
   useEffect(() => {
-    const preset = VIEW_PRESETS[view]
-    if (!preset || !mannequinRef.current) return
+    const viewChanged = lastViewNonceRef.current !== viewNonce
+    lastViewNonceRef.current = viewNonce
 
     const reducedMotion = typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-    if (reducedMotion || viewNonce === 0) {
-      targetRotationRef.current = null
-      mannequinRef.current.rotation.set(preset.pitch, preset.yaw, 0)
-      invalidate()
-      return
+    let nextPose = null
+    let animateFigureRotation = true
+
+    if (viewChanged && VIEW_PRESETS[view]) {
+      const wide = getDefaultWidePose({ compact })
+      nextPose = {
+        ...wide,
+        yaw: VIEW_PRESETS[view].yaw,
+        pitch: VIEW_PRESETS[view].pitch,
+      }
+      manualDragRef.current = false
+    } else if (selectedZone) {
+      const zonePreset = getZoneCameraPose(selectedZone, { compact })
+      if (zonePreset) {
+        nextPose = zonePreset.pose
+        manualDragRef.current = false
+      }
+    } else if (cinemaEnabled) {
+      nextPose = sampleCinemaPose(scrollProgressRef.current, { compact })
+      animateFigureRotation = !manualDragRef.current
+    } else {
+      const wide = getDefaultWidePose({ compact })
+      const preset = VIEW_PRESETS[view] ?? VIEW_PRESETS.reset
+      nextPose = {
+        ...wide,
+        yaw: preset.yaw,
+        pitch: preset.pitch,
+      }
+      animateFigureRotation = viewChanged || viewNonce === 0
     }
 
-    targetRotationRef.current = { x: preset.pitch, y: preset.yaw }
+    if (!nextPose) return
+
+    cameraGoalRef.current = {
+      ...nextPose,
+      animateFigureRotation,
+    }
+
+    if (reducedMotion || (viewNonce === 0 && !selectedZone && scrollProgressRef.current === 0 && cameraGoalRef.current)) {
+      if (reducedMotion) {
+        camera.position.set(...nextPose.pos)
+        currentTargetRef.current.set(...nextPose.target)
+        camera.lookAt(currentTargetRef.current)
+        if (mannequinRef.current && animateFigureRotation) {
+          mannequinRef.current.rotation.set(nextPose.pitch, nextPose.yaw, 0)
+        }
+        cameraGoalRef.current = null
+      }
+    }
+
     invalidate()
-  }, [view, viewNonce, mannequinRef, targetRotationRef, invalidate])
+  }, [
+    view,
+    viewNonce,
+    selectedZone,
+    compact,
+    cinemaEnabled,
+    camera,
+    cameraGoalRef,
+    mannequinRef,
+    manualDragRef,
+    scrollProgressRef,
+    invalidate,
+  ])
 
   useFrame((_, delta) => {
-    const target = targetRotationRef.current
+    const goal = cameraGoalRef.current
     const figure = mannequinRef.current
-    if (!target || !figure) return
+    if (!goal || !figure) return
 
-    const step = 1 - Math.exp(-10 * Math.min(delta, 0.05))
-    const dx = target.x - figure.rotation.x
-    const dy = shortestAngleDiff(figure.rotation.y, target.y)
+    const step = 1 - Math.exp(-8.5 * Math.min(delta, 0.05))
+    tempPosRef.current.set(...goal.pos)
+    tempTargetRef.current.set(...goal.target)
 
-    if (Math.abs(dx) < 0.0015 && Math.abs(dy) < 0.0015) {
-      figure.rotation.set(target.x, target.y, 0)
-      targetRotationRef.current = null
+    camera.position.lerp(tempPosRef.current, step)
+    currentTargetRef.current.lerp(tempTargetRef.current, step)
+    camera.lookAt(currentTargetRef.current)
+
+    let rotDone = true
+    if (goal.animateFigureRotation && !manualDragRef.current) {
+      const dx = goal.pitch - figure.rotation.x
+      const dy = shortestAngleDiff(figure.rotation.y, goal.yaw)
+      if (Math.abs(dx) > 0.0012 || Math.abs(dy) > 0.0012) {
+        figure.rotation.x += dx * step
+        figure.rotation.y += dy * step
+        rotDone = false
+      } else {
+        figure.rotation.set(goal.pitch, goal.yaw, 0)
+      }
+    }
+
+    const posDist = camera.position.distanceToSquared(tempPosRef.current)
+    const targetDist = currentTargetRef.current.distanceToSquared(tempTargetRef.current)
+
+    if (posDist < 0.00001 && targetDist < 0.00001 && rotDone) {
+      camera.position.copy(tempPosRef.current)
+      currentTargetRef.current.copy(tempTargetRef.current)
+      camera.lookAt(currentTargetRef.current)
+      cameraGoalRef.current = null
       return
     }
 
-    figure.rotation.x += dx * step
-    figure.rotation.y += dy * step
     invalidate()
   })
 
@@ -210,6 +300,10 @@ function SceneContent({
         mannequinRef.current
           ? { x: mannequinRef.current.rotation.x, y: mannequinRef.current.rotation.y }
           : null,
+      getCamera: () => ({
+        position: camera.position.toArray(),
+        target: currentTargetRef.current.toArray(),
+      }),
       getZoneColor: (zone) => {
         let color = null
         scene.traverse((object) => {
@@ -230,7 +324,7 @@ function SceneContent({
         delete window.__FOCUS_FIGURE_3D__
       }
     }
-  }, [gl, mannequinRef, scene])
+  }, [camera, gl, mannequinRef, scene])
 
   return (
     <>
@@ -243,7 +337,7 @@ function SceneContent({
       <directionalLight
         color={palette.key}
         intensity={palette.keyIntensity}
-        position={[3.2, 4.4, 4.2]}
+        position={[3.4, 4.6, 4.4]}
         castShadow={!isSoftwareGl}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-near={1}
@@ -258,17 +352,17 @@ function SceneContent({
       <directionalLight
         color={palette.fill}
         intensity={palette.fillIntensity}
-        position={[-4.0, 1.8, 2.2]}
+        position={[-4.2, 2.0, 2.6]}
       />
       <directionalLight
         color={palette.rim}
         intensity={palette.rimIntensity}
-        position={[-2.2, 2.6, -4.0]}
+        position={[-2.4, 2.8, -4.2]}
       />
       <directionalLight
         color={palette.rim}
-        intensity={palette.rimIntensity * 0.45}
-        position={[2.4, 2.0, -3.6]}
+        intensity={palette.rimIntensity * 0.36}
+        position={[2.6, 2.1, -3.8]}
       />
 
       <Mannequin
@@ -292,6 +386,9 @@ export default function FocusFigure3D({
   summary = '',
   view = 'front',
   viewNonce = 0,
+  compact = false,
+  cinemaEnabled = true,
+  onRegisterControls = null,
   hoveredZone,
   selectedZone,
   onHoverZone,
@@ -304,11 +401,46 @@ export default function FocusFigure3D({
   const palette = FIGURE_THEMES[theme] ?? FIGURE_THEMES.dark
   const [isSoftwareGl] = useState(detectSoftwareWebGL)
   const mannequinRef = useRef(null)
-  const targetRotationRef = useRef(null)
+  const cameraGoalRef = useRef(null)
+  const manualDragRef = useRef(false)
+  const scrollProgressRef = useRef(0)
   const invalidateRef = useRef(null)
   const dragRef = useRef(null)
   const dragDistanceRef = useRef(0)
   const [isDragging, setIsDragging] = useState(false)
+
+  // Expose imperative scroll-driven camera updater so 60fps scroll choreography
+  // updates the Three.js camera goal without triggering React tree re-renders.
+  useEffect(() => {
+    if (!onRegisterControls) return undefined
+
+    onRegisterControls({
+      setScrollProgress(u, { pinnedZone = null, isCompact = compact } = {}) {
+        scrollProgressRef.current = u
+        if (pinnedZone) return
+        const pose = sampleCinemaPose(u, { compact: isCompact })
+        cameraGoalRef.current = {
+          ...pose,
+          animateFigureRotation: !manualDragRef.current,
+        }
+        invalidateRef.current?.()
+      },
+      snapToProgress(u, { isCompact = compact } = {}) {
+        scrollProgressRef.current = u
+        manualDragRef.current = false
+        const pose = sampleCinemaPose(u, { compact: isCompact })
+        cameraGoalRef.current = {
+          ...pose,
+          animateFigureRotation: true,
+        }
+        invalidateRef.current?.()
+      },
+    })
+
+    return () => {
+      onRegisterControls(null)
+    }
+  }, [onRegisterControls, compact])
 
   useEffect(() => () => {
     invalidateRef.current = null
@@ -317,7 +449,6 @@ export default function FocusFigure3D({
   function handlePointerDown(event) {
     if (event.pointerType === 'mouse' && event.button !== 0) return
 
-    targetRotationRef.current = null
     dragDistanceRef.current = 0
     dragRef.current = {
       pointerId: event.pointerId,
@@ -341,6 +472,10 @@ export default function FocusFigure3D({
     const figure = mannequinRef.current
     figure.rotation.y += deltaX * YAW_SPEED
     figure.rotation.x = clamp(figure.rotation.x + deltaY * PITCH_SPEED, -PITCH_LIMIT, PITCH_LIMIT)
+    manualDragRef.current = true
+    if (cameraGoalRef.current) {
+      cameraGoalRef.current.animateFigureRotation = false
+    }
     invalidateRef.current?.()
 
     if (!drag.captured && dragDistanceRef.current > CLICK_SLOP) {
@@ -379,6 +514,7 @@ export default function FocusFigure3D({
 
   function handleSelectZone(zone) {
     if (dragDistanceRef.current > CLICK_SLOP) return
+    manualDragRef.current = false
     onSelectZone(zone)
   }
 
@@ -396,6 +532,12 @@ export default function FocusFigure3D({
     hoveredZone ? 'is-zone-hovered' : '',
     isDragging ? 'is-dragging' : '',
   ].filter(Boolean).join(' ')
+
+  const initialPose = useMemo(() => (
+    cinemaEnabled
+      ? sampleCinemaPose(0, { compact })
+      : getDefaultWidePose({ compact })
+  ), [cinemaEnabled, compact])
 
   return (
     <div
@@ -417,11 +559,12 @@ export default function FocusFigure3D({
         frameloop="demand"
         shadows={!isSoftwareGl}
         dpr={isSoftwareGl ? 1 : [1, 1.75]}
-        camera={{ position: [0, 0.14, 6.15], fov: 31, near: 0.1, far: 24 }}
+        camera={{ position: initialPose.pos, fov: 26, near: 0.1, far: 24 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        onCreated={({ gl, invalidate }) => {
+        onCreated={({ gl, camera, invalidate }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping
-          gl.toneMappingExposure = 1.05
+          gl.toneMappingExposure = 1.04
+          camera.lookAt(...initialPose.target)
           invalidateRef.current = invalidate
           invalidate()
           onReady?.()
@@ -433,8 +576,13 @@ export default function FocusFigure3D({
           counts={counts}
           view={view}
           viewNonce={viewNonce}
+          compact={compact}
+          cinemaEnabled={cinemaEnabled}
           mannequinRef={mannequinRef}
-          targetRotationRef={targetRotationRef}
+          cameraGoalRef={cameraGoalRef}
+          manualDragRef={manualDragRef}
+          scrollProgressRef={scrollProgressRef}
+          invalidateRef={invalidateRef}
           hoveredZone={hoveredZone}
           selectedZone={selectedZone}
           isSoftwareGl={isSoftwareGl}
@@ -444,7 +592,7 @@ export default function FocusFigure3D({
         />
       </Canvas>
 
-      <span className="focus-figure__drag-hint" aria-hidden="true">Drag to rotate 360°</span>
+      <span className="focus-figure__drag-hint" aria-hidden="true">Drag 3D body to orbit</span>
     </div>
   )
 }

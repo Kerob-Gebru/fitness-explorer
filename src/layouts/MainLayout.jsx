@@ -191,6 +191,7 @@ export default function MainLayout() {
           {pathname !== '/workout/session' && <Footer />}
         </div>
       </div>
+      <div className="grain" aria-hidden="true" />
       <ScrollRestoration />
     </>
   )

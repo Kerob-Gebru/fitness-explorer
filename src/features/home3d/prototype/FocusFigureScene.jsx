@@ -125,7 +125,7 @@ export default function FocusFigureScene({ onReady, onPointerMissed, ...scenePro
       style={{ position: 'absolute', inset: 0 }}
       frameloop="demand"
       dpr={[1, 1.75]}
-      camera={{ position: [0, 0.18, 5.9], fov: 32, near: 0.1, far: 20 }}
+      camera={{ position: [0, 0.145, 8.15], fov: 26, near: 0.1, far: 22 }}
       gl={{
         antialias: true,
         alpha: true,
@@ -133,9 +133,10 @@ export default function FocusFigureScene({ onReady, onPointerMissed, ...scenePro
         preserveDrawingBuffer: true,
         powerPreference: 'high-performance',
       }}
-      onCreated={({ gl, invalidate }) => {
+      onCreated={({ gl, camera, invalidate }) => {
         gl.toneMapping = THREE.NeutralToneMapping
         gl.toneMappingExposure = 1
+        camera.lookAt(0, 0.145, 0)
         onReady?.({ invalidate })
         invalidate()
       }}
