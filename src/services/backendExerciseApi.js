@@ -1,10 +1,27 @@
 
 import { ApiRequestError, NotFoundError } from './errors.js'
 
-const RAW_BASE_URL = (import.meta.env.VITE_BACKEND_API_URL || '/api').trim()
-const BASE_URL = RAW_BASE_URL.endsWith('/') && RAW_BASE_URL.length > 1
-  ? RAW_BASE_URL.slice(0, -1)
-  : RAW_BASE_URL
+function resolveApiBaseUrl(rawValue) {
+  const trimmed = (rawValue || '/api').trim()
+  if (!trimmed || trimmed === '/') return '/api'
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed)
+      if (!parsed.pathname || parsed.pathname === '/') {
+        parsed.pathname = '/api'
+      }
+      return parsed.toString().replace(/\/+$/, '')
+    } catch {
+      return trimmed.replace(/\/+$/, '')
+    }
+  }
+
+  const normalized = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  return normalized.length > 1 ? normalized.replace(/\/+$/, '') : normalized
+}
+
+const BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_BACKEND_API_URL)
 
 function resolveBackendUrl(pathOrUrl) {
   if (typeof pathOrUrl !== 'string' || !pathOrUrl.trim()) return null

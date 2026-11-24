@@ -64,6 +64,13 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.use("/api", (req, res) => {
+  return res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === "LIMIT_FILE_SIZE") {
