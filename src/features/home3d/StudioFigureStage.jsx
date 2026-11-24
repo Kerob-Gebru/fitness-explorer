@@ -7,14 +7,22 @@ import './studioFigureStage.css'
 
 const FocusFigure3D = lazy(() => import('./FocusFigure3D.jsx'))
 
+let cachedWebGLSupport = null
+
 function supportsWebGL() {
+  if (cachedWebGLSupport !== null) return cachedWebGLSupport
   try {
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('webgl2') || canvas.getContext('webgl')
-    if (!context) return false
+    if (!context) {
+      cachedWebGLSupport = false
+      return false
+    }
     context.getExtension('WEBGL_lose_context')?.loseContext()
+    cachedWebGLSupport = true
     return true
   } catch {
+    cachedWebGLSupport = false
     return false
   }
 }

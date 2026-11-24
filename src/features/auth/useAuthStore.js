@@ -16,6 +16,7 @@ export const useAuthStore = create((set, get) => ({
   accessToken: '',
   refreshToken: '',
   sessions: [],
+  sessionsLoaded: false,
   schemaMetadata: null,
   loading: false,
   error: '',
@@ -28,15 +29,21 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: '' })
     try {
       const data = await loginAccount({ email, password })
+      const hasSessions = Array.isArray(data.sessions)
       set({
         user: data.user,
         session: data.session,
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
+        sessions: hasSessions ? data.sessions : (data.session ? [data.session] : []),
+        sessionsLoaded: hasSessions,
+        schemaMetadata: data.schema || get().schemaMetadata,
         loading: false,
         error: '',
       })
-      await get().fetchSessions()
+      if (!hasSessions) {
+        await get().fetchSessions()
+      }
       return data
     } catch (error) {
       set({ loading: false, error: error.message || 'Sign in failed.' })
@@ -48,15 +55,21 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: '' })
     try {
       const data = await registerAccount({ displayName, email, password })
+      const hasSessions = Array.isArray(data.sessions)
       set({
         user: data.user,
         session: data.session,
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
+        sessions: hasSessions ? data.sessions : (data.session ? [data.session] : []),
+        sessionsLoaded: hasSessions,
+        schemaMetadata: data.schema || get().schemaMetadata,
         loading: false,
         error: '',
       })
-      await get().fetchSessions()
+      if (!hasSessions) {
+        await get().fetchSessions()
+      }
       return data
     } catch (error) {
       set({ loading: false, error: error.message || 'Account creation failed.' })
@@ -72,6 +85,7 @@ export const useAuthStore = create((set, get) => ({
       set({
         user: data.user ?? get().user,
         sessions: Array.isArray(data.sessions) ? data.sessions : [],
+        sessionsLoaded: true,
         schemaMetadata: data.schema || null,
       })
       return data
@@ -83,6 +97,7 @@ export const useAuthStore = create((set, get) => ({
           accessToken: '',
           refreshToken: '',
           sessions: [],
+          sessionsLoaded: false,
           error: error.message,
         })
       }
@@ -96,15 +111,21 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: '' })
     try {
       const data = await refreshAuthSession({ refreshToken })
+      const hasSessions = Array.isArray(data.sessions)
       set({
         user: data.user,
         session: data.session,
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
+        sessions: hasSessions ? data.sessions : get().sessions,
+        sessionsLoaded: hasSessions || get().sessionsLoaded,
+        schemaMetadata: data.schema || get().schemaMetadata,
         loading: false,
         error: '',
       })
-      await get().fetchSessions()
+      if (!hasSessions) {
+        await get().fetchSessions()
+      }
       return data
     } catch (error) {
       set({
@@ -113,6 +134,7 @@ export const useAuthStore = create((set, get) => ({
         accessToken: '',
         refreshToken: '',
         sessions: [],
+        sessionsLoaded: false,
         loading: false,
         error: error.message || 'Session rotation failed.',
       })
@@ -133,6 +155,7 @@ export const useAuthStore = create((set, get) => ({
           accessToken: '',
           refreshToken: '',
           sessions: [],
+          sessionsLoaded: false,
           loading: false,
         })
       } else {
@@ -160,6 +183,7 @@ export const useAuthStore = create((set, get) => ({
         accessToken: '',
         refreshToken: '',
         sessions: [],
+        sessionsLoaded: false,
         loading: false,
         error: '',
       })
@@ -179,6 +203,7 @@ export const useAuthStore = create((set, get) => ({
         accessToken: '',
         refreshToken: '',
         sessions: [],
+        sessionsLoaded: false,
         loading: false,
         error: '',
       })

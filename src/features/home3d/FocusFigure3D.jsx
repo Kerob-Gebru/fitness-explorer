@@ -27,18 +27,26 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
 }
 
+let cachedSoftwareWebGL = null
+
 function detectSoftwareWebGL() {
+  if (cachedSoftwareWebGL !== null) return cachedSoftwareWebGL
   try {
     const canvas = document.createElement('canvas')
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
-    if (!gl) return false
+    if (!gl) {
+      cachedSoftwareWebGL = false
+      return false
+    }
     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
     const renderer = debugInfo
       ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
       : gl.getParameter(gl.RENDERER)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
-    return /swiftshader|llvmpipe|software|mesa offscreen/i.test(String(renderer || ''))
+    cachedSoftwareWebGL = /swiftshader|llvmpipe|software|mesa offscreen/i.test(String(renderer || ''))
+    return cachedSoftwareWebGL
   } catch {
+    cachedSoftwareWebGL = false
     return false
   }
 }
@@ -563,7 +571,7 @@ export default function FocusFigure3D({
         className="focus-figure__canvas"
         style={{ position: 'absolute', inset: 0 }}
         frameloop="demand"
-        shadows={!isSoftwareGl}
+        shadows={isSoftwareGl ? false : 'percentage'}
         dpr={isSoftwareGl ? 1 : [1, 1.75]}
         camera={{ position: initialPose.pos, fov: 26, near: 0.1, far: 24 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}

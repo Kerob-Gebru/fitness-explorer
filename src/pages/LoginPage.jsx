@@ -43,6 +43,7 @@ export default function LoginPage() {
     user,
     session,
     sessions,
+    sessionsLoaded,
     schemaMetadata,
     loading,
     error,
@@ -72,10 +73,10 @@ export default function LoginPage() {
   const passwordId = useId()
 
   useEffect(() => {
-    if (user && sessions.length === 0) {
+    if (user && !sessionsLoaded) {
       fetchSessions()
     }
-  }, [user, sessions.length, fetchSessions])
+  }, [user, sessionsLoaded, fetchSessions])
 
   function switchMode(nextMode) {
     setMode(nextMode)

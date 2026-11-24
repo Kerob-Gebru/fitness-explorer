@@ -114,12 +114,16 @@ export function createAuthHandlers(store) {
         email: user.email,
       });
 
+      const sanitizedSession = sanitizeSession(session);
+
       return res.status(201).json({
         success: true,
         message: "Account created successfully.",
         data: {
           user: sanitizeUser(user),
-          session: sanitizeSession(session),
+          session: sanitizedSession,
+          sessions: [sanitizedSession],
+          schema: AUTH_SESSION_TABLE_METADATA,
           accessToken,
           refreshToken,
           expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
@@ -194,12 +198,16 @@ export function createAuthHandlers(store) {
         email: user.email,
       });
 
+      const sessions = await store.listSessionsByUser(user.id);
+
       return res.status(200).json({
         success: true,
         message: "Signed in successfully.",
         data: {
           user: sanitizeUser(user),
           session: sanitizeSession(session),
+          sessions: sessions.map(sanitizeSession),
+          schema: AUTH_SESSION_TABLE_METADATA,
           accessToken,
           refreshToken,
           expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
@@ -277,12 +285,16 @@ export function createAuthHandlers(store) {
         email: user.email,
       });
 
+      const sessions = await store.listSessionsByUser(user.id);
+
       return res.status(200).json({
         success: true,
         message: "Session rotated.",
         data: {
           user: sanitizeUser(user),
           session: sanitizeSession(rotatedSession),
+          sessions: sessions.map(sanitizeSession),
+          schema: AUTH_SESSION_TABLE_METADATA,
           accessToken,
           refreshToken: nextRefreshToken,
           expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,

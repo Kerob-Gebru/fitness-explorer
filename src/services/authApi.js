@@ -20,6 +20,8 @@ function resolveApiBaseUrl(rawValue) {
 
 const BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_BACKEND_API_URL)
 
+const AUTH_REQUEST_TIMEOUT_MS = 15000
+
 async function authRequest(path, { method = 'GET', body = null, accessToken = '' } = {}) {
   const headers = {
     Accept: 'application/json',
@@ -31,15 +33,26 @@ async function authRequest(path, { method = 'GET', body = null, accessToken = ''
     headers.Authorization = `Bearer ${accessToken}`
   }
 
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS)
+    : null
+
   let response
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       headers,
       body: body !== null ? JSON.stringify(body) : undefined,
+      signal: controller?.signal,
     })
-  } catch {
-    throw new Error('Could not connect to the authentication server.')
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Authentication request timed out. Please try again.', { cause: error })
+    }
+    throw new Error('Could not connect to the authentication server.', { cause: error })
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId)
   }
 
   let payload = null
