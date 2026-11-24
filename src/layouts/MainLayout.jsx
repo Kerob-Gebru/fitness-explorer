@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
+import { Link, Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 import AppSidebar from '../components/layout/AppSidebar.jsx'
 import Footer from '../components/layout/Footer.jsx'
+import { useAuthStore } from '../features/auth/useAuthStore.js'
 import { useTheme } from '../features/theme/themeContext.js'
 
-function getPageTitle(pathname) {
+function getPageTitle(pathname, isAuthenticated) {
   if (pathname === '/') return 'Dashboard'
   if (pathname.startsWith('/explore')) return 'Explore'
   if (pathname.startsWith('/exercises/')) return 'Exercise details'
@@ -13,6 +14,7 @@ function getPageTitle(pathname) {
   if (pathname.startsWith('/workout')) return 'Workout'
   if (pathname.startsWith('/calendar')) return 'Calendar'
   if (pathname.startsWith('/progress')) return 'Progress'
+  if (pathname.startsWith('/login')) return isAuthenticated ? 'Account' : 'Sign in'
   return 'Fitness Explorer'
 }
 
@@ -52,6 +54,7 @@ function HeaderThemeToggle() {
 
 export default function MainLayout() {
   const { pathname } = useLocation()
+  const authUser = useAuthStore((state) => state.user)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const shellRef = useRef(null)
   const menuButtonRef = useRef(null)
@@ -180,8 +183,14 @@ export default function MainLayout() {
                   <path d="M4 7h16M4 12h16M4 17h16" />
                 </svg>
               </button>
-              <p className="app-header__title">{getPageTitle(pathname)}</p>
+              <p className="app-header__title">{getPageTitle(pathname, Boolean(authUser))}</p>
               <span className="app-header__brand">Fitness Explorer</span>
+              <Link
+                to="/login"
+                className={`app-header__auth-link${authUser ? ' is-authenticated' : ''}`}
+              >
+                {authUser ? authUser.displayName : 'Sign in'}
+              </Link>
               <HeaderThemeToggle />
             </div>
           </header>

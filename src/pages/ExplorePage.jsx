@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import SearchBar from '../components/exercises/SearchBar.jsx'
 import ExerciseFilters from '../components/exercises/ExerciseFilters.jsx'
 import ExerciseGrid from '../components/exercises/ExerciseGrid.jsx'
@@ -56,9 +57,13 @@ function Results({ exercises, hasActiveFilters, onReset, onHoverExercise }) {
     <>
       <ExerciseGrid exercises={exercises.slice(0, visible)} onHoverExercise={onHoverExercise} />
       {visible < exercises.length && (
-        <div className="center">
-          <button type="button" className="btn" onClick={() => setVisible(visible + PAGE_SIZE)}>
-            Show more ({exercises.length - visible} left)
+        <div className="center explore-pagination">
+          <button
+            type="button"
+            className="btn btn--primary glint"
+            onClick={() => setVisible(visible + PAGE_SIZE)}
+          >
+            <span className="glint__label">Show more ({exercises.length - visible} remaining)</span>
           </button>
         </div>
       )}
@@ -98,6 +103,10 @@ export default function ExplorePage() {
   )
   const hoveredZone = hoveredExerciseZones?.primaryZone ?? null
   const selectedLabel = selectedZone ? getZoneLabel(selectedZone) : ''
+  const equipmentCount = useMemo(() => {
+    if (!sortedExercises) return options?.equipment?.length ?? 0
+    return new Set(sortedExercises.map((ex) => ex.equipment).filter(Boolean)).size
+  }, [sortedExercises, options])
 
   function handleSelectZone(zoneId) {
     if (selectedZone === zoneId) {
@@ -145,15 +154,46 @@ export default function ExplorePage() {
 
   return (
     <div className="explore-page">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">EXERCISE LIBRARY</p>
-          <h1 className="display">Explore <em>exercises</em></h1>
+      <header className="page-heading explore-hero">
+        <div className="explore-hero__copy">
+          <div className="explore-hero__top">
+            <p className="eyebrow">EXERCISE LIBRARY</p>
+            <span className="explore-hero__sep" aria-hidden="true">/</span>
+            <span className="explore-hero__context">
+              {selectedZone ? `Focused on ${selectedLabel}` : 'Anatomical Discovery'}
+            </span>
+          </div>
+          <h1 className="display">Explore <em>the library.</em></h1>
           <p className="muted">
-            Search by name, muscle, body part, equipment or instructions, or filter straight from the 3D anatomy model.
+            Search by name, muscle, body part, equipment or instructions, or isolate any target zone directly on the 3D athlete.
           </p>
+          <div className="explore-hero__actions">
+            <Link to="/workout" className="btn btn--primary glint">
+              <span className="glint__label">Open workout studio</span>
+            </Link>
+            {hasActiveFilters && (
+              <button type="button" className="btn btn--ghost" onClick={resetFilters}>
+                Reset active filters
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+
+        <dl className="explore-hero__metrics" aria-label="Library overview">
+          <div className="explore-metric">
+            <dt>Matched</dt>
+            <dd>{sortedExercises ? sortedExercises.length : '—'}</dd>
+          </div>
+          <div className="explore-metric">
+            <dt>Muscle Zones</dt>
+            <dd>{zoneSummary.activeZones.length}<span>/6</span></dd>
+          </div>
+          <div className="explore-metric">
+            <dt>Equipment</dt>
+            <dd>{equipmentCount}</dd>
+          </div>
+        </dl>
+      </header>
 
       <div className="studio-split-layout">
         <div className="studio-split-layout__main">

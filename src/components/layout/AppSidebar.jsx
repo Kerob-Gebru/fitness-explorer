@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router-dom'
+import { useAuthStore } from '../../features/auth/useAuthStore.js'
 import { useFavoritesStore } from '../../features/favorites/useFavoritesStore.js'
 import { useWorkoutStore } from '../../features/workout/useWorkoutStore.js'
 
@@ -14,6 +15,7 @@ function SidebarIcon({ name }) {
     calendar: 'M5 4v4M19 4v4M4 7h16v13H4zM8 11h3M8 15h3M14 11h3',
     progress: 'M4 19V5M4 19h17M7 15l4-4 3 2 6-7',
     favorites: 'M12 20s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6.2-8 11-8 11Z',
+    account: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20a7.5 7.5 0 0 1 15 0',
   }
 
   return (
@@ -24,6 +26,7 @@ function SidebarIcon({ name }) {
 }
 
 export default function AppSidebar() {
+  const authUser = useAuthStore((state) => state.user)
   const favoriteCount = useFavoritesStore((state) => state.favorites.length)
   const workoutCount = useWorkoutStore((state) => state.exercises.length)
 
@@ -79,6 +82,14 @@ export default function AppSidebar() {
               <SidebarIcon name="favorites" /> <span className="app-sidebar-label">Favorites</span>
               <span className="app-sidebar-count" aria-label={`${favoriteCount} saved`}>
                 {favoriteCount}
+              </span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/login" className={linkClass}>
+              <SidebarIcon name="account" />
+              <span className="app-sidebar-label">
+                {authUser ? authUser.displayName : 'Sign in'}
               </span>
             </NavLink>
           </li>

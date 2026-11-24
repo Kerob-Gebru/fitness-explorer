@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import authRoutes from "./routes/authRoutes.js";
 import exerciseRoutes from "./routes/exerciseRoutes.js";
 import { testDatabaseConnection } from "./config/db.js";
 
@@ -46,11 +47,13 @@ app.use(
       }
       return callback(new Error("Origin not allowed by CORS."));
     },
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.use(express.json());
 app.use("/uploads", express.static(uploadDirectory));
+app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
 
 app.get("/api/health", (req, res) => {

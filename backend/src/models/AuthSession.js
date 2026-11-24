@@ -3,6 +3,12 @@
 // this model to the configured database.
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import {
+  AUTH_SESSION_COLUMNS,
+  AUTH_SESSION_INDEXES,
+  AUTH_SESSION_TABLE_METADATA,
+  AUTH_SESSION_TABLE_NAME,
+} from "./authSessionSchema.js";
 
 // This model describes the existing auth_sessions table; it does not create or
 // alter it. Attribute names match the existing snake_case column names.
@@ -71,32 +77,21 @@ const AuthSession = sequelize.define(
   },
   {
     // Explicit mapping avoids Sequelize guessing a table name.
-    tableName: "auth_sessions",
+    tableName: AUTH_SESSION_TABLE_NAME,
     // Sequelize manages timestamps using the table's existing column names.
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
     // Match the token, lookup, rotation-family, and replacement indexes.
-    indexes: [
-      {
-        name: "auth_sessions_refresh_token_unique",
-        unique: true,
-        fields: ["refresh_token_hash"],
-      },
-      {
-        name: "auth_sessions_user_expiry",
-        fields: ["user_id", "expires_at"],
-      },
-      {
-        name: "auth_sessions_user_family_revoked",
-        fields: ["user_id", "token_family_id", "revoked_at"],
-      },
-      {
-        name: "auth_sessions_replaced_by_session",
-        fields: ["replaced_by_session_id"],
-      },
-    ],
+    indexes: AUTH_SESSION_INDEXES.map((index) => ({ ...index })),
   }
 );
+
+export {
+  AUTH_SESSION_TABLE_NAME,
+  AUTH_SESSION_COLUMNS,
+  AUTH_SESSION_INDEXES,
+  AUTH_SESSION_TABLE_METADATA,
+};
 
 export default AuthSession;

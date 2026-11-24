@@ -22,3 +22,5 @@ npm-debug.log*
 Thumbs.db
 uploads/*
 !uploads/.gitkeep
+backend/data/
+

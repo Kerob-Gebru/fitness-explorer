@@ -5,6 +5,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import multer from "multer";
+import { createAuthHandlers } from "./backend/src/auth/authHandlers.js";
+import { fileAuthStore } from "./backend/src/auth/fileAuthStore.js";
 import upload, {
   hasValidImageSignature,
   removeUploadedFile,
@@ -17,6 +19,7 @@ const rootDirectory = path.dirname(currentFile);
 const distDirectory = path.resolve(rootDirectory, "dist");
 const manifestPath = path.resolve(uploadDirectory, "exercise-images.json");
 const VALID_SOURCES = new Set(["backend", "mock", "api"]);
+const authHandlers = createAuthHandlers(fileAuthStore);
 
 function normalizeExerciseId(rawId) {
   if (typeof rawId !== "string") return "";
@@ -104,11 +107,20 @@ async function createApp() {
         }
         return callback(new Error("Origin not allowed by CORS."));
       },
+      allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
 
-  app.use(express.json());
+  app.use(express.json({ limit: "100kb" }));
   app.use("/uploads", express.static(uploadDirectory));
+
+  app.post("/api/auth/register", authHandlers.register);
+  app.post("/api/auth/login", authHandlers.login);
+  app.post("/api/auth/refresh", authHandlers.refresh);
+  app.post("/api/auth/logout", authHandlers.logout);
+  app.get("/api/auth/sessions", authHandlers.requireAuth, authHandlers.listSessions);
+  app.delete("/api/auth/sessions/:id", authHandlers.requireAuth, authHandlers.revokeSession);
+  app.post("/api/auth/logout-all", authHandlers.requireAuth, authHandlers.revokeAllSessions);
 
   app.get("/api/health", (req, res) => {
     res.status(200).json({
