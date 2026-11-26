@@ -49,14 +49,16 @@ function normalizeExercise(raw) {
     bodyPart: raw.body_part || '',
     target: raw.target_muscle || '',
     equipment: raw.equipment || '',
-    secondaryMuscles: [],
-    instructions: raw.instructions
-      ? [raw.instructions]
-      : [],
+    secondaryMuscles: Array.isArray(raw.secondaryMuscles) ? raw.secondaryMuscles : [],
+    instructions: Array.isArray(raw.instructions)
+      ? raw.instructions
+      : raw.instructions
+        ? [raw.instructions]
+        : [],
     gifUrl: resolveBackendUrl(raw.gif_url),
     imageUrl: null,
     videoUrl: null,
-    source: 'backend',
+    source: raw.source || 'backend',
   }
 }
 

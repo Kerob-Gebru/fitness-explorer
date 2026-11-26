@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 
 import authRoutes from "./routes/authRoutes.js";
 import exerciseRoutes from "./routes/exerciseRoutes.js";
+import userStateRoutes from "./routes/userStateRoutes.js";
 import { testDatabaseConnection } from "./config/db.js";
 
 dotenv.config();
@@ -67,14 +68,16 @@ app.use(
       }
       return callback(new Error("Origin not allowed by CORS."));
     },
+    credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use("/uploads", express.static(uploadDirectory));
 app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
+app.use("/api/user-state", userStateRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

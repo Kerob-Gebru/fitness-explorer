@@ -43,6 +43,7 @@ async function authRequest(path, { method = 'GET', body = null, accessToken = ''
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       headers,
+      credentials: 'include',
       body: body !== null ? JSON.stringify(body) : undefined,
       signal: controller?.signal,
     })
@@ -89,10 +90,17 @@ export function loginAccount({ email, password }) {
   })
 }
 
-export function refreshAuthSession({ refreshToken }) {
+export function refreshAuthSession({ refreshToken = '' } = {}) {
   return authRequest('/auth/refresh', {
     method: 'POST',
-    body: { refreshToken },
+    body: refreshToken ? { refreshToken } : {},
+  })
+}
+
+export function restoreAuthSession() {
+  return authRequest('/auth/restore', {
+    method: 'POST',
+    body: {},
   })
 }
 
@@ -124,4 +132,90 @@ export function logoutAllAuthSessions({ accessToken }) {
     accessToken,
     body: {},
   })
+}
+
+export function updateAuthProfile({ accessToken, displayName, email }) {
+  return authRequest('/auth/profile', {
+    method: 'PATCH',
+    accessToken,
+    body: { displayName, email },
+  })
+}
+
+export function changeAccountPassword({ accessToken, currentPassword, newPassword }) {
+  return authRequest('/auth/change-password', {
+    method: 'POST',
+    accessToken,
+    body: { currentPassword, newPassword },
+  })
+}
+
+export async function uploadProfileAvatar({ accessToken, file }) {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS)
+    : null
+
+  let response
+  try {
+    response = await fetch(`${BASE_URL}/auth/avatar`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      credentials: 'include',
+      body: formData,
+      signal: controller?.signal,
+    })
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Photo upload timed out. Please try again.', { cause: error })
+    }
+    throw new Error('Could not connect to upload profile photo.', { cause: error })
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId)
+  }
+
+  let payload = null
+  try {
+    payload = await response.json()
+  } catch {
+    // Non-JSON response handled below.
+  }
+
+  if (!response.ok || !payload?.success) {
+    const error = new Error(payload?.message || `Photo upload failed (${response.status}).`)
+    error.status = response.status
+    throw error
+  }
+
+  return payload.data
+}
+
+export function removeProfileAvatar({ accessToken }) {
+  return authRequest('/auth/avatar', {
+    method: 'DELETE',
+    accessToken,
+  })
+}
+
+export function resolveAuthMediaUrl(pathOrUrl) {
+  if (typeof pathOrUrl !== 'string' || !pathOrUrl.trim()) return ''
+  const value = pathOrUrl.trim()
+  if (/^https?:\/\//i.test(value)) return value
+  try {
+    if (/^https?:\/\//i.test(BASE_URL)) {
+      return new URL(value, BASE_URL).toString()
+    }
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return new URL(value, window.location.origin).toString()
+    }
+    return value
+  } catch {
+    return value
+  }
 }

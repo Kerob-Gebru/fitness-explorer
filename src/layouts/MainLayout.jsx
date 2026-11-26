@@ -3,7 +3,9 @@ import { Link, Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 import AppSidebar from '../components/layout/AppSidebar.jsx'
 import Footer from '../components/layout/Footer.jsx'
 import { useAuthStore } from '../features/auth/useAuthStore.js'
+import { useProfileStore } from '../features/auth/useProfileStore.js'
 import { useTheme } from '../features/theme/themeContext.js'
+import { resolveAuthMediaUrl } from '../services/authApi.js'
 
 function getPageTitle(pathname, search, isAuthenticated) {
   if (pathname === '/') return 'Dashboard'
@@ -14,9 +16,10 @@ function getPageTitle(pathname, search, isAuthenticated) {
   if (pathname.startsWith('/workout')) return 'Workout'
   if (pathname.startsWith('/calendar')) return 'Calendar'
   if (pathname.startsWith('/progress')) return 'Progress'
-  if (pathname.startsWith('/register')) return isAuthenticated ? 'Account' : 'Create account'
+  if (pathname.startsWith('/profile')) return 'My Profile'
+  if (pathname.startsWith('/register')) return isAuthenticated ? 'My Profile' : 'Create account'
   if (pathname.startsWith('/login')) {
-    if (isAuthenticated) return 'Account'
+    if (isAuthenticated) return 'My Profile'
     return new URLSearchParams(search).get('mode') === 'register' ? 'Create account' : 'Sign in'
   }
   return 'Fitness Explorer'
@@ -59,6 +62,8 @@ function HeaderThemeToggle() {
 export default function MainLayout() {
   const { pathname, search } = useLocation()
   const authUser = useAuthStore((state) => state.user)
+  const profileAvatar = useProfileStore((state) => state.profile.avatarUrl)
+  const headerAvatarUrl = resolveAuthMediaUrl(profileAvatar || authUser?.avatarUrl || '')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const shellRef = useRef(null)
   const menuButtonRef = useRef(null)
@@ -192,10 +197,18 @@ export default function MainLayout() {
               <div className="app-header__auth-actions">
                 {authUser ? (
                   <Link
-                    to="/login"
+                    to="/profile"
                     className="app-header__auth-link is-authenticated"
                   >
-                    {authUser.displayName}
+                    {headerAvatarUrl && (
+                      <img
+                        src={headerAvatarUrl}
+                        alt=""
+                        className="app-header__avatar"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    <span>{authUser.displayName}</span>
                   </Link>
                 ) : (
                   <>

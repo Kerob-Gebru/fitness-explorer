@@ -2,6 +2,8 @@ import { Component, useEffect, useLayoutEffect, useState } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './app/routes.jsx'
 import { ThemeContext } from './features/theme/themeContext.js'
+import { useAuthStore } from './features/auth/useAuthStore.js'
+import { startUserStateSync } from './features/auth/userStateSync.js'
 import { hydrateUploadedImagesFromBackend } from './features/exercises/uploadedExerciseImages.js'
 import { getUploadedImagesManifest } from './services/backendExerciseApi.js'
 
@@ -64,6 +66,13 @@ function ThemeProvider({ children }) {
 export default function App() {
   useEffect(() => {
     hydrateUploadedImagesFromBackend(getUploadedImagesManifest)
+    const stopSync = startUserStateSync({
+      getAccessToken: () => useAuthStore.getState().accessToken,
+      rotateSession: () => useAuthStore.getState().rotateSession(),
+      updateUser: (user) => useAuthStore.getState().setUser(user),
+    })
+    useAuthStore.getState().restoreSession()
+    return () => stopSync()
   }, [])
 
   return (

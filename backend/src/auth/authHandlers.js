@@ -1,12 +1,14 @@
 import crypto from "node:crypto";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_COOKIE_NAME,
   REFRESH_TOKEN_TTL_MS,
   extractBearerToken,
   generateRefreshToken,
   hashPassword,
   hashRefreshToken,
   normalizeEmail,
+  parseCookies,
   sanitizeSession,
   sanitizeUser,
   signAccessToken,
@@ -16,6 +18,39 @@ import {
   verifyPassword,
 } from "./authCore.js";
 import { AUTH_SESSION_TABLE_METADATA } from "../models/authSessionSchema.js";
+import { USER_PROFILE_TABLE_METADATA } from "../models/userProfileSchema.js";
+
+function isSecureRequest(req) {
+  return Boolean(req?.secure || req?.headers?.["x-forwarded-proto"] === "https");
+}
+
+function setRefreshCookie(req, res, refreshToken) {
+  if (typeof res?.cookie !== "function") return;
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+    path: "/api/auth",
+    maxAge: REFRESH_TOKEN_TTL_MS,
+  });
+}
+
+function clearRefreshCookie(req, res) {
+  if (typeof res?.clearCookie !== "function") return;
+  res.clearCookie(REFRESH_COOKIE_NAME, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+    path: "/api/auth",
+  });
+}
+
+function extractRefreshToken(req) {
+  const fromBody = typeof req?.body?.refreshToken === "string" ? req.body.refreshToken.trim() : "";
+  if (fromBody) return fromBody;
+  const cookies = parseCookies(req?.headers?.cookie);
+  return typeof cookies[REFRESH_COOKIE_NAME] === "string" ? cookies[REFRESH_COOKIE_NAME].trim() : "";
+}
 
 export function createAuthHandlers(store) {
   async function requireAuth(req, res, next) {
@@ -115,6 +150,7 @@ export function createAuthHandlers(store) {
       });
 
       const sanitizedSession = sanitizeSession(session);
+      setRefreshCookie(req, res, refreshToken);
 
       return res.status(201).json({
         success: true,
@@ -124,6 +160,7 @@ export function createAuthHandlers(store) {
           session: sanitizedSession,
           sessions: [sanitizedSession],
           schema: AUTH_SESSION_TABLE_METADATA,
+          profileSchema: USER_PROFILE_TABLE_METADATA,
           accessToken,
           refreshToken,
           expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
@@ -199,6 +236,7 @@ export function createAuthHandlers(store) {
       });
 
       const sessions = await store.listSessionsByUser(user.id);
+      setRefreshCookie(req, res, refreshToken);
 
       return res.status(200).json({
         success: true,
@@ -208,6 +246,7 @@ export function createAuthHandlers(store) {
           session: sanitizeSession(session),
           sessions: sessions.map(sanitizeSession),
           schema: AUTH_SESSION_TABLE_METADATA,
+          profileSchema: USER_PROFILE_TABLE_METADATA,
           accessToken,
           refreshToken,
           expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
@@ -224,7 +263,7 @@ export function createAuthHandlers(store) {
 
   async function refresh(req, res) {
     try {
-      const rawRefreshToken = typeof req.body?.refreshToken === "string" ? req.body.refreshToken.trim() : "";
+      const rawRefreshToken = extractRefreshToken(req);
       if (!rawRefreshToken) {
         return res.status(400).json({
           success: false,
@@ -235,6 +274,7 @@ export function createAuthHandlers(store) {
       const tokenHash = hashRefreshToken(rawRefreshToken);
       const existing = await store.findSessionByRefreshHash(tokenHash);
       if (!existing) {
+        clearRefreshCookie(req, res);
         return res.status(401).json({
           success: false,
           message: "Invalid refresh token.",
@@ -244,6 +284,7 @@ export function createAuthHandlers(store) {
       // Token reuse detection: revoke the entire family if a rotated or revoked token is presented again.
       if (existing.revoked_at || existing.replaced_by_session_id) {
         await store.revokeFamily(existing.user_id, existing.token_family_id);
+        clearRefreshCookie(req, res);
         return res.status(401).json({
           success: false,
           message: "Session token reuse detected. Please sign in again.",
@@ -252,6 +293,7 @@ export function createAuthHandlers(store) {
 
       if (new Date(existing.expires_at).getTime() <= Date.now()) {
         await store.revokeSessionById(existing.id, existing.user_id);
+        clearRefreshCookie(req, res);
         return res.status(401).json({
           success: false,
           message: "Refresh token expired. Please sign in again.",
@@ -261,6 +303,7 @@ export function createAuthHandlers(store) {
       const user = await store.findUserById(existing.user_id);
       if (!user || !user.is_active) {
         await store.revokeFamily(existing.user_id, existing.token_family_id);
+        clearRefreshCookie(req, res);
         return res.status(401).json({
           success: false,
           message: "Account unavailable.",
@@ -286,6 +329,7 @@ export function createAuthHandlers(store) {
       });
 
       const sessions = await store.listSessionsByUser(user.id);
+      setRefreshCookie(req, res, nextRefreshToken);
 
       return res.status(200).json({
         success: true,
@@ -295,6 +339,7 @@ export function createAuthHandlers(store) {
           session: sanitizeSession(rotatedSession),
           sessions: sessions.map(sanitizeSession),
           schema: AUTH_SESSION_TABLE_METADATA,
+          profileSchema: USER_PROFILE_TABLE_METADATA,
           accessToken,
           refreshToken: nextRefreshToken,
           expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
@@ -309,10 +354,105 @@ export function createAuthHandlers(store) {
     }
   }
 
+  async function restore(req, res) {
+    try {
+      const cookies = parseCookies(req?.headers?.cookie);
+      const rawRefreshToken =
+        typeof cookies[REFRESH_COOKIE_NAME] === "string" ? cookies[REFRESH_COOKIE_NAME].trim() : "";
+
+      if (!rawRefreshToken) {
+        return res.status(200).json({
+          success: true,
+          data: { authenticated: false },
+        });
+      }
+
+      const tokenHash = hashRefreshToken(rawRefreshToken);
+      const existing = await store.findSessionByRefreshHash(tokenHash);
+      if (!existing) {
+        clearRefreshCookie(req, res);
+        return res.status(200).json({
+          success: true,
+          data: { authenticated: false },
+        });
+      }
+
+      if (existing.revoked_at || existing.replaced_by_session_id) {
+        await store.revokeFamily(existing.user_id, existing.token_family_id);
+        clearRefreshCookie(req, res);
+        return res.status(200).json({
+          success: true,
+          data: { authenticated: false },
+        });
+      }
+
+      if (new Date(existing.expires_at).getTime() <= Date.now()) {
+        await store.revokeSessionById(existing.id, existing.user_id);
+        clearRefreshCookie(req, res);
+        return res.status(200).json({
+          success: true,
+          data: { authenticated: false },
+        });
+      }
+
+      const user = await store.findUserById(existing.user_id);
+      if (!user || !user.is_active) {
+        await store.revokeFamily(existing.user_id, existing.token_family_id);
+        clearRefreshCookie(req, res);
+        return res.status(200).json({
+          success: true,
+          data: { authenticated: false },
+        });
+      }
+
+      const nextRefreshToken = generateRefreshToken();
+      const nextRefreshTokenHash = hashRefreshToken(nextRefreshToken);
+      const nextSessionId = crypto.randomUUID();
+      const nextExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+
+      const rotatedSession = await store.rotateSession({
+        oldSessionId: existing.id,
+        newSessionId: nextSessionId,
+        newRefreshTokenHash: nextRefreshTokenHash,
+        newExpiresAt: nextExpiresAt,
+      });
+
+      const accessToken = signAccessToken({
+        userId: user.id,
+        sessionId: rotatedSession.id,
+        email: user.email,
+      });
+
+      const sessions = await store.listSessionsByUser(user.id);
+      setRefreshCookie(req, res, nextRefreshToken);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          authenticated: true,
+          user: sanitizeUser(user),
+          session: sanitizeSession(rotatedSession),
+          sessions: sessions.map(sanitizeSession),
+          schema: AUTH_SESSION_TABLE_METADATA,
+          profileSchema: USER_PROFILE_TABLE_METADATA,
+          accessToken,
+          refreshToken: nextRefreshToken,
+          expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+        },
+      });
+    } catch (error) {
+      console.error("Session restore failed:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to restore session.",
+      });
+    }
+  }
+
   async function logout(req, res) {
     try {
       const bearerClaims = verifyAccessToken(extractBearerToken(req.headers.authorization));
-      const rawRefreshToken = typeof req.body?.refreshToken === "string" ? req.body.refreshToken.trim() : "";
+      const rawRefreshToken = extractRefreshToken(req);
 
       if (rawRefreshToken) {
         const session = await store.findSessionByRefreshHash(hashRefreshToken(rawRefreshToken));
@@ -322,6 +462,8 @@ export function createAuthHandlers(store) {
       } else if (bearerClaims) {
         await store.revokeSessionById(bearerClaims.sessionId, bearerClaims.userId);
       }
+
+      clearRefreshCookie(req, res);
 
       return res.status(200).json({
         success: true,
@@ -345,6 +487,7 @@ export function createAuthHandlers(store) {
           user: sanitizeUser(req.auth.user),
           currentSessionId: req.auth.sessionId,
           schema: AUTH_SESSION_TABLE_METADATA,
+          profileSchema: USER_PROFILE_TABLE_METADATA,
           sessions: sessions.map(sanitizeSession),
         },
       });
@@ -375,12 +518,17 @@ export function createAuthHandlers(store) {
         });
       }
 
+      const revokedCurrentSession = sessionId === req.auth.sessionId;
+      if (revokedCurrentSession) {
+        clearRefreshCookie(req, res);
+      }
+
       return res.status(200).json({
         success: true,
         message: "Session revoked.",
         data: {
           revokedSessionId: sessionId,
-          revokedCurrentSession: sessionId === req.auth.sessionId,
+          revokedCurrentSession,
         },
       });
     } catch (error) {
@@ -395,6 +543,7 @@ export function createAuthHandlers(store) {
   async function revokeAllSessions(req, res) {
     try {
       const count = await store.revokeAllUserSessions(req.auth.userId);
+      clearRefreshCookie(req, res);
       return res.status(200).json({
         success: true,
         message: "All sessions signed out.",
@@ -409,14 +558,135 @@ export function createAuthHandlers(store) {
     }
   }
 
+  async function updateProfile(req, res) {
+    try {
+      const updates = {};
+      if (req.body?.displayName !== undefined) {
+        const displayName = validateDisplayName(req.body.displayName);
+        if (!displayName) {
+          return res.status(400).json({
+            success: false,
+            message: "Display name must be between 2 and 80 characters.",
+          });
+        }
+        updates.displayName = displayName;
+      }
+
+      if (req.body?.email !== undefined) {
+        const email = normalizeEmail(req.body.email);
+        if (!email) {
+          return res.status(400).json({
+            success: false,
+            message: "Please enter a valid email address.",
+          });
+        }
+        updates.email = email;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: "Profile updated.",
+          data: { user: sanitizeUser(req.auth.user) },
+        });
+      }
+
+      const updatedUser = await store.updateUserProfile(req.auth.userId, updates);
+      if (!updatedUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Account not found.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile updated.",
+        data: { user: sanitizeUser(updatedUser) },
+      });
+    } catch (error) {
+      if (
+        error?.code === "EMAIL_CONFLICT" ||
+        error?.name === "SequelizeUniqueConstraintError" ||
+        error?.code === "ER_DUP_ENTRY"
+      ) {
+        return res.status(409).json({
+          success: false,
+          message: "An account with this email already exists.",
+        });
+      }
+
+      console.error("Update profile failed:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update profile.",
+      });
+    }
+  }
+
+  async function changePassword(req, res) {
+    try {
+      const currentPassword =
+        typeof req.body?.currentPassword === "string" ? req.body.currentPassword : "";
+      const newPassword =
+        typeof req.body?.newPassword === "string" ? req.body.newPassword : "";
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Current and new passwords are required.",
+        });
+      }
+
+      const validCurrent = await verifyPassword(currentPassword, req.auth.user.password_hash);
+      if (!validCurrent) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect.",
+        });
+      }
+
+      if (!validatePassword(newPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 8 characters long.",
+        });
+      }
+
+      if (currentPassword === newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Choose a new password different from your current one.",
+        });
+      }
+
+      const nextHash = await hashPassword(newPassword);
+      await store.updateUserPassword(req.auth.userId, nextHash);
+
+      return res.status(200).json({
+        success: true,
+        message: "Password updated successfully.",
+      });
+    } catch (error) {
+      console.error("Change password failed:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update password.",
+      });
+    }
+  }
+
   return {
     requireAuth,
     register,
     login,
     refresh,
+    restore,
     logout,
     listSessions,
     revokeSession,
     revokeAllSessions,
+    updateProfile,
+    changePassword,
   };
 }

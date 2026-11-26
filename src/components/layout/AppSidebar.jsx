@@ -87,7 +87,7 @@ export default function AppSidebar() {
           </li>
           {authUser ? (
             <li>
-              <NavLink to="/login" className={linkClass}>
+              <NavLink to="/profile" className={linkClass}>
                 <SidebarIcon name="account" />
                 <span className="app-sidebar-label">{authUser.displayName}</span>
               </NavLink>

@@ -41,6 +41,9 @@ export const useFavoritesStore = create(
         else addFavorite(exercise)
       },
 
+      replaceFavorites: (nextFavorites) =>
+        set({ favorites: sanitizeFavorites(nextFavorites) }),
+
       isFavorite: (exerciseId) =>
         get().favorites.some((item) => String(item.id) === String(exerciseId)),
     }),

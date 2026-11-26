@@ -662,6 +662,15 @@ export const useWorkoutStore = create(persist((set, get) => ({
     activeSession: null,
   })),
   deleteHistorySession: (id) => set((state) => ({ history: state.history.filter((session) => session.id !== id) })),
+  replaceWorkoutState: (nextWorkout) => set(() => ({
+    exercises: sanitizeExercises(nextWorkout?.exercises),
+    goals: sanitizeGoals(nextWorkout?.goals),
+    settings: sanitizeSettings(nextWorkout?.settings),
+    plans: sanitizePlans(nextWorkout?.plans),
+    history: sanitizeHistory(nextWorkout?.history),
+    scheduledWorkouts: sanitizeScheduledWorkouts(nextWorkout?.scheduledWorkouts),
+    activeSession: sanitizeSession(nextWorkout?.activeSession),
+  })),
 }), {
   name: 'fitness-explorer-workout',
   version: 5,

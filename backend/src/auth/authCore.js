@@ -1,13 +1,58 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const REFRESH_COOKIE_NAME = "fe_refresh_token";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const PROCESS_SIGNING_SECRET =
-  (process.env.AUTH_TOKEN_SECRET && process.env.AUTH_TOKEN_SECRET.trim()) ||
-  crypto.randomBytes(32).toString("hex");
+const currentFile = fileURLToPath(import.meta.url);
+const secretFilePath = path.resolve(path.dirname(currentFile), "../../data/.auth-secret");
+
+function resolveSigningSecret() {
+  const configured = process.env.AUTH_TOKEN_SECRET && process.env.AUTH_TOKEN_SECRET.trim();
+  if (configured) return configured;
+
+  try {
+    const existing = fs.readFileSync(secretFilePath, "utf8").trim();
+    if (existing.length >= 32) return existing;
+  } catch {
+    // Secret file does not exist yet.
+  }
+
+  const generated = crypto.randomBytes(32).toString("hex");
+  try {
+    fs.mkdirSync(path.dirname(secretFilePath), { recursive: true });
+    fs.writeFileSync(secretFilePath, generated, { encoding: "utf8", mode: 0o600 });
+  } catch {
+    // Fall back to in-memory secret if filesystem is read-only.
+  }
+  return generated;
+}
+
+const PROCESS_SIGNING_SECRET = resolveSigningSecret();
+
+export function parseCookies(cookieHeader) {
+  const cookies = {};
+  if (typeof cookieHeader !== "string" || !cookieHeader) return cookies;
+
+  for (const part of cookieHeader.split(";")) {
+    const eqIndex = part.indexOf("=");
+    if (eqIndex <= 0) continue;
+    const name = part.slice(0, eqIndex).trim();
+    const rawValue = part.slice(eqIndex + 1).trim();
+    if (!name) continue;
+    try {
+      cookies[name] = decodeURIComponent(rawValue);
+    } catch {
+      cookies[name] = rawValue;
+    }
+  }
+  return cookies;
+}
 
 function scryptAsync(password, salt) {
   return new Promise((resolve, reject) => {
@@ -150,6 +195,7 @@ export function sanitizeUser(user) {
     id: Number(user.id),
     email: user.email,
     displayName: user.display_name,
+    avatarUrl: typeof user.avatar_url === "string" && user.avatar_url ? user.avatar_url : null,
     weeklyWorkoutGoal: Number(user.weekly_workout_goal ?? 3),
     monthlyWorkoutGoal: Number(user.monthly_workout_goal ?? 12),
     isActive: Boolean(user.is_active),

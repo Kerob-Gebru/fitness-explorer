@@ -8,8 +8,20 @@ import Favorite from "./Favorite.js";
 import Exercise from "./Exercise.js";
 import WorkoutPlan from "./WorkoutPlan.js";
 import WorkoutDraft from "./WorkoutDraft.js";
+import UserProfile from "./UserProfile.js";
 
-// Users own sessions, favorites, workout plans, and one in-progress draft.
+// Users own sessions, favorites, workout plans, one profile row, and one in-progress draft.
+User.hasOne(UserProfile, {
+  as: "profile",
+  foreignKey: "user_id",
+  sourceKey: "id",
+});
+UserProfile.belongsTo(User, {
+  as: "user",
+  foreignKey: "user_id",
+  targetKey: "id",
+});
+
 User.hasMany(AuthSession, {
   as: "authSessions",
   foreignKey: "user_id",
@@ -83,6 +95,7 @@ AuthSession.belongsTo(AuthSession, {
 export {
   sequelize,
   User,
+  UserProfile,
   AuthSession,
   Favorite,
   Exercise,

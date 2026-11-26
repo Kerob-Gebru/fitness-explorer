@@ -3,6 +3,10 @@ import fsPromises from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildAuthSessionRow } from "../models/authSessionSchema.js";
+import {
+  buildUserProfileRow,
+  mapProfileRowToClient,
+} from "../models/userProfileSchema.js";
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDirectory = path.dirname(currentFile);
@@ -16,6 +20,8 @@ function createEmptyStore() {
     nextUserId: 1,
     users: [],
     auth_sessions: [],
+    user_profiles: [],
+    user_states: {},
   };
 }
 
@@ -27,6 +33,11 @@ async function readStore() {
       nextUserId: Number(parsed?.nextUserId) || 1,
       users: Array.isArray(parsed?.users) ? parsed.users : [],
       auth_sessions: Array.isArray(parsed?.auth_sessions) ? parsed.auth_sessions : [],
+      user_profiles: Array.isArray(parsed?.user_profiles) ? parsed.user_profiles : [],
+      user_states:
+        parsed?.user_states && typeof parsed.user_states === "object" && !Array.isArray(parsed.user_states)
+          ? parsed.user_states
+          : {},
     };
   } catch (error) {
     if (error.code !== "ENOENT") {
@@ -74,6 +85,7 @@ export const fileAuthStore = {
         id: store.nextUserId,
         email,
         display_name: displayName,
+        avatar_url: null,
         password_hash: passwordHash,
         weekly_workout_goal: 3,
         monthly_workout_goal: 12,
@@ -83,6 +95,53 @@ export const fileAuthStore = {
       };
       store.nextUserId += 1;
       store.users.push(user);
+      await writeStore(store);
+      return user;
+    });
+  },
+
+  async updateUserProfile(userId, { displayName, email, avatarUrl } = {}) {
+    return runSerialized(async () => {
+      const store = await readStore();
+      const user = store.users.find((u) => Number(u.id) === Number(userId));
+      if (!user) return null;
+
+      if (typeof email === "string" && email && email !== user.email) {
+        if (store.users.some((u) => u.email === email && Number(u.id) !== Number(userId))) {
+          const conflict = new Error("An account with this email already exists.");
+          conflict.code = "EMAIL_CONFLICT";
+          throw conflict;
+        }
+        user.email = email;
+      }
+
+      if (typeof displayName === "string" && displayName) {
+        user.display_name = displayName;
+      }
+      if (avatarUrl !== undefined) {
+        user.avatar_url = avatarUrl || null;
+        const profileIndex = store.user_profiles.findIndex(
+          (p) => Number(p.user_id) === Number(userId)
+        );
+        if (profileIndex >= 0) {
+          store.user_profiles[profileIndex].avatar_url = avatarUrl || null;
+          store.user_profiles[profileIndex].updated_at = new Date().toISOString();
+        }
+      }
+      user.updated_at = new Date().toISOString();
+
+      await writeStore(store);
+      return user;
+    });
+  },
+
+  async updateUserPassword(userId, passwordHash) {
+    return runSerialized(async () => {
+      const store = await readStore();
+      const user = store.users.find((u) => Number(u.id) === Number(userId));
+      if (!user) return null;
+      user.password_hash = passwordHash;
+      user.updated_at = new Date().toISOString();
       await writeStore(store);
       return user;
     });
@@ -233,5 +292,77 @@ export const fileAuthStore = {
       .filter((s) => Number(s.user_id) === Number(userId))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 20);
+  },
+
+  async getUserState(userId) {
+    const store = await readStore();
+    const stateRecord = store.user_states[String(userId)] || null;
+    const profileRow =
+      store.user_profiles.find((p) => Number(p.user_id) === Number(userId)) || null;
+
+    if (!stateRecord && !profileRow) return null;
+    if (!stateRecord && profileRow) {
+      return {
+        favorites: [],
+        recentExercises: [],
+        profile: mapProfileRowToClient(profileRow),
+        workout: {},
+        updatedAt: profileRow.updated_at || null,
+      };
+    }
+
+    return {
+      ...stateRecord,
+      profile: profileRow ? mapProfileRowToClient(profileRow) : stateRecord.profile,
+    };
+  },
+
+  async saveUserState(userId, nextState) {
+    return runSerialized(async () => {
+      const store = await readStore();
+      const now = new Date();
+      const isoNow = now.toISOString();
+      const key = String(userId);
+
+      const existingProfileIndex = store.user_profiles.findIndex(
+        (p) => Number(p.user_id) === Number(userId)
+      );
+      const existingProfile =
+        existingProfileIndex >= 0 ? store.user_profiles[existingProfileIndex] : null;
+      const profileRow = buildUserProfileRow({
+        user_id: userId,
+        created_at: existingProfile?.created_at || isoNow,
+        now: isoNow,
+        ...(nextState?.profile || {}),
+      });
+
+      if (existingProfileIndex >= 0) {
+        store.user_profiles[existingProfileIndex] = profileRow;
+      } else {
+        store.user_profiles.push(profileRow);
+      }
+
+      const record = {
+        ...nextState,
+        profile: mapProfileRowToClient(profileRow),
+        updatedAt: isoNow,
+      };
+      store.user_states[key] = record;
+
+      const user = store.users.find((u) => Number(u.id) === Number(userId));
+      const goals = nextState?.workout?.goals;
+      if (user && goals && typeof goals === "object") {
+        if (Number.isInteger(goals.weekly) && goals.weekly >= 1 && goals.weekly <= 14) {
+          user.weekly_workout_goal = goals.weekly;
+        }
+        if (Number.isInteger(goals.monthly) && goals.monthly >= 1 && goals.monthly <= 60) {
+          user.monthly_workout_goal = goals.monthly;
+        }
+        user.updated_at = isoNow;
+      }
+
+      await writeStore(store);
+      return { record, profile: profileRow, user: user || null };
+    });
   },
 };

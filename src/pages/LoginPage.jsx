@@ -1,41 +1,9 @@
 import { useEffect, useId, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import StudioFigureStage from '../features/home3d/StudioFigureStage.jsx'
 import { getZoneLabel } from '../features/home3d/studioZoneMapping.js'
 import { useAuthStore } from '../features/auth/useAuthStore.js'
 import useDocumentTitle from '../hooks/useDocumentTitle.js'
-
-function formatTimestamp(isoString) {
-  if (!isoString) return '—'
-  const date = new Date(isoString)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function shortId(uuid) {
-  if (!uuid) return '—'
-  return `${String(uuid).slice(0, 8)}...`
-}
-
-function SessionStatusBadge({ status }) {
-  const normalized = status || 'active'
-  const labels = {
-    active: 'Active',
-    rotated: 'Rotated',
-    revoked: 'Revoked',
-    expired: 'Expired',
-  }
-  return (
-    <span className={`auth-session-status auth-session-status--${normalized}`}>
-      {labels[normalized] || normalized}
-    </span>
-  )
-}
 
 export default function LoginPage({ initialMode = 'login' }) {
   const navigate = useNavigate()
@@ -43,19 +11,10 @@ export default function LoginPage({ initialMode = 'login' }) {
   const [searchParams] = useSearchParams()
   const {
     user,
-    session,
-    sessions,
-    sessionsLoaded,
-    schemaMetadata,
     loading,
     error,
     signIn,
     register,
-    rotateSession,
-    revokeSession,
-    signOut,
-    signOutAll,
-    fetchSessions,
     clearError,
   } = useAuthStore()
 
@@ -69,10 +28,9 @@ export default function LoginPage({ initialMode = 'login' }) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [localError, setLocalError] = useState('')
-  const [statusNotice, setStatusNotice] = useState('')
   const [previewZone, setPreviewZone] = useState('chest')
 
-  useDocumentTitle(user ? 'Account' : mode === 'register' ? 'Create account' : 'Sign in')
+  useDocumentTitle(user ? 'My Profile' : mode === 'register' ? 'Create account' : 'Sign in')
 
   const displayNameId = useId()
   const emailId = useId()
@@ -80,15 +38,8 @@ export default function LoginPage({ initialMode = 'login' }) {
 
   useEffect(() => () => clearError(), [clearError])
 
-  useEffect(() => {
-    if (user && !sessionsLoaded) {
-      fetchSessions()
-    }
-  }, [user, sessionsLoaded, fetchSessions])
-
   function switchMode(nextMode) {
     setLocalError('')
-    setStatusNotice('')
     clearError()
     navigate(nextMode === 'register' ? '/register' : '/login', { replace: true })
   }
@@ -96,7 +47,6 @@ export default function LoginPage({ initialMode = 'login' }) {
   async function handleSubmit(event) {
     event.preventDefault()
     setLocalError('')
-    setStatusNotice('')
     clearError()
 
     const trimmedEmail = email.trim()
@@ -120,185 +70,14 @@ export default function LoginPage({ initialMode = 'login' }) {
 
     if (result?.user) {
       setPassword('')
-      setStatusNotice(
-        mode === 'register'
-          ? 'Account created and AuthSession initialized.'
-          : 'Signed in. Session active in memory.',
-      )
-    }
-  }
-
-  async function handleRotate() {
-    setStatusNotice('')
-    const rotated = await rotateSession()
-    if (rotated?.session) {
-      setStatusNotice(`Session rotated into family ${shortId(rotated.session.tokenFamilyId)}.`)
+      navigate('/profile', { replace: true })
     }
   }
 
   const displayedError = localError || error
 
   if (user) {
-    return (
-      <div className="login-page">
-        <header className="page-heading login-hero">
-          <div className="login-hero__copy">
-            <div className="login-hero__top">
-              <p className="eyebrow">AUTHENTICATED MEMBER</p>
-              <span className="login-hero__sep" aria-hidden="true">/</span>
-              <span className="login-hero__context">AuthSession Active</span>
-            </div>
-            <h1 className="display">Welcome, <em>{user.displayName}.</em></h1>
-            <p className="muted">
-              Signed in as {user.email}. Your active token family and rotated session ledger are backed by the auth_sessions schema.
-            </p>
-            <div className="login-hero__actions">
-              <button type="button" className="btn btn--primary glint" onClick={() => navigate('/')}>
-                <span className="glint__label">Open dashboard</span>
-              </button>
-              <button type="button" className="btn btn--ghost" onClick={handleRotate} disabled={loading}>
-                Rotate refresh token
-              </button>
-              <button type="button" className="btn btn--ghost" onClick={signOut} disabled={loading}>
-                Sign out
-              </button>
-            </div>
-          </div>
-
-          <dl className="login-hero__metrics" aria-label="Account targets and session summary">
-            <div className="login-metric">
-              <dt>Weekly Goal</dt>
-              <dd>{user.weeklyWorkoutGoal}<span>/wk</span></dd>
-            </div>
-            <div className="login-metric">
-              <dt>Monthly Goal</dt>
-              <dd>{user.monthlyWorkoutGoal}<span>/mo</span></dd>
-            </div>
-            <div className="login-metric">
-              <dt>Sessions</dt>
-              <dd>{sessions.length}</dd>
-            </div>
-          </dl>
-        </header>
-
-        {(statusNotice || displayedError) && (
-          <p className={displayedError ? 'login-alert login-alert--error' : 'login-alert login-alert--ok'} role={displayedError ? 'alert' : 'status'}>
-            {displayedError || statusNotice}
-          </p>
-        )}
-
-        <div className="login-account-grid">
-          <section className="login-sessions-panel" aria-labelledby="sessions-heading">
-            <div className="login-panel__head">
-              <div>
-                <p className="eyebrow">SESSION LEDGER</p>
-                <h2 id="sessions-heading" className="display">Active <em>sessions</em></h2>
-              </div>
-              <button type="button" className="btn btn--ghost btn--sm" onClick={signOutAll} disabled={loading}>
-                Revoke all sessions
-              </button>
-            </div>
-
-            {sessions.length === 0 ? (
-              <p className="muted">No session records found.</p>
-            ) : (
-              <ul className="auth-session-list">
-                {sessions.map((item) => {
-                  const isCurrent = session?.id === item.id
-                  const isRevocable = item.status === 'active'
-                  return (
-                    <li
-                      key={item.id}
-                      className={`auth-session-item${isCurrent ? ' is-current' : ''}`}
-                    >
-                      <div className="auth-session-item__main">
-                        <div className="auth-session-item__title">
-                          <span className="auth-session-item__id">{shortId(item.id)}</span>
-                          {isCurrent && <span className="auth-session-current-tag">Current</span>}
-                          <SessionStatusBadge status={item.status} />
-                        </div>
-                        <dl className="auth-session-item__meta">
-                          <div>
-                            <dt>Family</dt>
-                            <dd>{shortId(item.tokenFamilyId)}</dd>
-                          </div>
-                          <div>
-                            <dt>Last used</dt>
-                            <dd>{formatTimestamp(item.lastUsedAt)}</dd>
-                          </div>
-                          <div>
-                            <dt>Expires</dt>
-                            <dd>{formatTimestamp(item.expiresAt)}</dd>
-                          </div>
-                          {item.replacedBySessionId && (
-                            <div>
-                              <dt>Replaced by</dt>
-                              <dd>{shortId(item.replacedBySessionId)}</dd>
-                            </div>
-                          )}
-                        </dl>
-                      </div>
-                      {isRevocable && (
-                        <button
-                          type="button"
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => revokeSession(item.id)}
-                          disabled={loading}
-                        >
-                          {isCurrent ? 'Sign out' : 'Revoke'}
-                        </button>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-
-          {schemaMetadata && (
-            <section className="login-schema-panel" aria-labelledby="schema-heading">
-              <div className="login-panel__head">
-                <div>
-                  <p className="eyebrow">TABLE SCHEMA</p>
-                  <h2 id="schema-heading" className="display"><em>{schemaMetadata.tableName}</em> columns</h2>
-                </div>
-                <span className="login-schema-count">{schemaMetadata.columns.length} columns</span>
-              </div>
-              <div className="login-schema-table-wrap">
-                <table className="login-schema-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Column</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">Constraint</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schemaMetadata.columns.map((col) => (
-                      <tr key={col.name}>
-                        <td className="login-schema-col">{col.name}</td>
-                        <td className="login-schema-type">{col.type}</td>
-                        <td className="login-schema-constraint">
-                          {col.primaryKey
-                            ? 'PRIMARY KEY'
-                            : col.unique
-                              ? 'UNIQUE'
-                              : col.references
-                                ? `FK -> ${col.references.table}.${col.references.column}`
-                                : col.nullable
-                                  ? 'NULLABLE'
-                                  : 'NOT NULL'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-        </div>
-      </div>
-    )
+    return <Navigate to="/profile" replace />
   }
 
   return (
@@ -316,8 +95,8 @@ export default function LoginPage({ initialMode = 'login' }) {
             </h1>
             <p className="muted">
               {mode === 'login'
-                ? 'Access your Fitness Explorer studio with rotating session tokens backed by the AuthSession schema.'
-                : 'Create your training profile to start an authenticated session with rotating refresh tokens.'}
+                ? 'Access your Fitness Explorer profile, body metrics, and synced workout plans.'
+                : 'Create your training profile to save favorites, workout plans, and metrics across sessions.'}
             </p>
           </div>
 
