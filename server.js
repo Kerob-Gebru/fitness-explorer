@@ -1,4 +1,5 @@
 import fsPromises from "node:fs/promises";
+import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
@@ -89,8 +90,10 @@ async function createApp() {
   const allowedOrigins = new Set([
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://[::1]:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://[::1]:5173",
     "http://localhost:4173",
     ...configuredOrigins,
   ]);
@@ -288,8 +291,37 @@ async function createApp() {
   }
 
   const PORT = Number(process.env.PORT) || 3000;
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Fitness Explorer running on http://0.0.0.0:${PORT}`);
+  const server = http.createServer(app);
+  const explicitHost = process.env.HOST?.trim();
+
+  await new Promise((resolve, reject) => {
+    let fellBackToIpv4 = false;
+
+    const handleListening = () => {
+      server.removeListener("error", handleError);
+      console.log(`Fitness Explorer running on http://localhost:${PORT}`);
+      resolve();
+    };
+
+    const handleError = (error) => {
+      if (
+        !explicitHost &&
+        !fellBackToIpv4 &&
+        (error?.code === "EAFNOSUPPORT" || error?.code === "EADDRNOTAVAIL")
+      ) {
+        fellBackToIpv4 = true;
+        server.listen(PORT, "0.0.0.0", handleListening);
+        return;
+      }
+      reject(error);
+    };
+
+    server.on("error", handleError);
+    if (explicitHost) {
+      server.listen(PORT, explicitHost, handleListening);
+    } else {
+      server.listen({ port: PORT, host: "::", ipv6Only: false }, handleListening);
+    }
   });
 }
 

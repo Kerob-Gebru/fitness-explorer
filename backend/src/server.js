@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import multer from "multer";
+import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -128,8 +129,38 @@ async function startServer() {
     );
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Fitness Explorer API running on http://0.0.0.0:${PORT}`);
+  const port = Number(PORT) || 5000;
+  const server = http.createServer(app);
+  const explicitHost = process.env.HOST?.trim();
+
+  await new Promise((resolve, reject) => {
+    let fellBackToIpv4 = false;
+
+    const handleListening = () => {
+      server.removeListener("error", handleError);
+      console.log(`Fitness Explorer API running on http://localhost:${port}`);
+      resolve();
+    };
+
+    const handleError = (error) => {
+      if (
+        !explicitHost &&
+        !fellBackToIpv4 &&
+        (error?.code === "EAFNOSUPPORT" || error?.code === "EADDRNOTAVAIL")
+      ) {
+        fellBackToIpv4 = true;
+        server.listen(port, "0.0.0.0", handleListening);
+        return;
+      }
+      reject(error);
+    };
+
+    server.on("error", handleError);
+    if (explicitHost) {
+      server.listen(port, explicitHost, handleListening);
+    } else {
+      server.listen({ port, host: "::", ipv6Only: false }, handleListening);
+    }
   });
 }
 
