@@ -25,6 +25,7 @@ export const router = createBrowserRouter([
       { path: 'calendar', element: <WorkoutCalendarPage /> },
       { path: 'progress', element: <ProgressPage /> },
       { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <LoginPage initialMode="register" /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

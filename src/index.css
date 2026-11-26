@@ -6662,13 +6662,20 @@ html[data-theme] .explore-page .explore-pagination .btn {
 /* ---------------------------------------------------------------------------
    Header Account Link & Login / AuthSession Studio (/login)
    --------------------------------------------------------------------------- */
+html[data-theme] .app-header__auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
 html[data-theme] .app-header__auth-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   min-height: 34px;
-  max-width: 140px;
+  max-width: 168px;
   padding: 0.3rem 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
@@ -6695,6 +6702,19 @@ html[data-theme='light'] .app-header__auth-link {
 html[data-theme] .app-header__auth-link:hover {
   border-color: var(--color-accent);
   color: var(--color-accent-accessible);
+}
+
+html[data-theme] .app-header__auth-link--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #111216;
+  font-weight: 600;
+}
+
+html[data-theme] .app-header__auth-link--primary:hover {
+  border-color: var(--color-accent-soft);
+  background: var(--color-accent-soft);
+  color: #111216;
 }
 
 html[data-theme] .app-header__auth-link.is-authenticated {
@@ -7226,11 +7246,22 @@ html[data-theme] .login-schema-constraint {
   }
 }
 
+@media (max-width: 680px) {
+  html[data-theme] .app-header__brand {
+    display: none;
+  }
+}
+
 @media (max-width: 560px) {
+  html[data-theme] .app-header__auth-actions {
+    gap: 0.32rem;
+  }
+
   html[data-theme] .app-header__auth-link {
-    max-width: 108px;
-    padding: 0.25rem 0.65rem;
-    font-size: 0.58rem;
+    max-width: 124px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
   }
 }
 

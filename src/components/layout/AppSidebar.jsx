@@ -85,14 +85,29 @@ export default function AppSidebar() {
               </span>
             </NavLink>
           </li>
-          <li>
-            <NavLink to="/login" className={linkClass}>
-              <SidebarIcon name="account" />
-              <span className="app-sidebar-label">
-                {authUser ? authUser.displayName : 'Sign in'}
-              </span>
-            </NavLink>
-          </li>
+          {authUser ? (
+            <li>
+              <NavLink to="/login" className={linkClass}>
+                <SidebarIcon name="account" />
+                <span className="app-sidebar-label">{authUser.displayName}</span>
+              </NavLink>
+            </li>
+          ) : (
+            <>
+              <li>
+                <NavLink to="/login" className={linkClass}>
+                  <SidebarIcon name="account" />
+                  <span className="app-sidebar-label">Sign in</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/register" className={linkClass}>
+                  <SidebarIcon name="account" />
+                  <span className="app-sidebar-label">Create account</span>
+                </NavLink>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
     </aside>

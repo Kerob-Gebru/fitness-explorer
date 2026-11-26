@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import StudioFigureStage from '../features/home3d/StudioFigureStage.jsx'
 import { getZoneLabel } from '../features/home3d/studioZoneMapping.js'
 import { useAuthStore } from '../features/auth/useAuthStore.js'
@@ -37,8 +37,10 @@ function SessionStatusBadge({ status }) {
   )
 }
 
-export default function LoginPage() {
+export default function LoginPage({ initialMode = 'login' }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
   const {
     user,
     session,
@@ -57,9 +59,11 @@ export default function LoginPage() {
     clearError,
   } = useAuthStore()
 
-  useDocumentTitle(user ? 'Account' : 'Sign in')
+  const mode =
+    location.pathname === '/register' || searchParams.get('mode') === 'register'
+      ? 'register'
+      : initialMode
 
-  const [mode, setMode] = useState('login')
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -68,9 +72,13 @@ export default function LoginPage() {
   const [statusNotice, setStatusNotice] = useState('')
   const [previewZone, setPreviewZone] = useState('chest')
 
+  useDocumentTitle(user ? 'Account' : mode === 'register' ? 'Create account' : 'Sign in')
+
   const displayNameId = useId()
   const emailId = useId()
   const passwordId = useId()
+
+  useEffect(() => () => clearError(), [clearError])
 
   useEffect(() => {
     if (user && !sessionsLoaded) {
@@ -79,10 +87,10 @@ export default function LoginPage() {
   }, [user, sessionsLoaded, fetchSessions])
 
   function switchMode(nextMode) {
-    setMode(nextMode)
     setLocalError('')
     setStatusNotice('')
     clearError()
+    navigate(nextMode === 'register' ? '/register' : '/login', { replace: true })
   }
 
   async function handleSubmit(event) {

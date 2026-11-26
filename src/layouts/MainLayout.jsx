@@ -5,7 +5,7 @@ import Footer from '../components/layout/Footer.jsx'
 import { useAuthStore } from '../features/auth/useAuthStore.js'
 import { useTheme } from '../features/theme/themeContext.js'
 
-function getPageTitle(pathname, isAuthenticated) {
+function getPageTitle(pathname, search, isAuthenticated) {
   if (pathname === '/') return 'Dashboard'
   if (pathname.startsWith('/explore')) return 'Explore'
   if (pathname.startsWith('/exercises/')) return 'Exercise details'
@@ -14,7 +14,11 @@ function getPageTitle(pathname, isAuthenticated) {
   if (pathname.startsWith('/workout')) return 'Workout'
   if (pathname.startsWith('/calendar')) return 'Calendar'
   if (pathname.startsWith('/progress')) return 'Progress'
-  if (pathname.startsWith('/login')) return isAuthenticated ? 'Account' : 'Sign in'
+  if (pathname.startsWith('/register')) return isAuthenticated ? 'Account' : 'Create account'
+  if (pathname.startsWith('/login')) {
+    if (isAuthenticated) return 'Account'
+    return new URLSearchParams(search).get('mode') === 'register' ? 'Create account' : 'Sign in'
+  }
   return 'Fitness Explorer'
 }
 
@@ -53,7 +57,7 @@ function HeaderThemeToggle() {
 }
 
 export default function MainLayout() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const authUser = useAuthStore((state) => state.user)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const shellRef = useRef(null)
@@ -183,14 +187,27 @@ export default function MainLayout() {
                   <path d="M4 7h16M4 12h16M4 17h16" />
                 </svg>
               </button>
-              <p className="app-header__title">{getPageTitle(pathname, Boolean(authUser))}</p>
+              <p className="app-header__title">{getPageTitle(pathname, search, Boolean(authUser))}</p>
               <span className="app-header__brand">Fitness Explorer</span>
-              <Link
-                to="/login"
-                className={`app-header__auth-link${authUser ? ' is-authenticated' : ''}`}
-              >
-                {authUser ? authUser.displayName : 'Sign in'}
-              </Link>
+              <div className="app-header__auth-actions">
+                {authUser ? (
+                  <Link
+                    to="/login"
+                    className="app-header__auth-link is-authenticated"
+                  >
+                    {authUser.displayName}
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/login" className="app-header__auth-link">
+                      Sign in
+                    </Link>
+                    <Link to="/register" className="app-header__auth-link app-header__auth-link--primary">
+                      Create account
+                    </Link>
+                  </>
+                )}
+              </div>
               <HeaderThemeToggle />
             </div>
           </header>
