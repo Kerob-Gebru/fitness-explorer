@@ -2,6 +2,57 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        function isMetaMaskNoise(source, message) {
+          var src = String(source || '');
+          var msg = String(message || '');
+          var fromExt =
+            src.indexOf('chrome-extension://') !== -1 ||
+            src.indexOf('moz-extension://') !== -1 ||
+            msg.indexOf('chrome-extension://') !== -1;
+          return fromExt && (msg.indexOf('MetaMask') !== -1 || src.indexOf('inpage.js') !== -1);
+        }
+
+        window.addEventListener(
+          'unhandledrejection',
+          function (event) {
+            var reason = event.reason;
+            if (isMetaMaskNoise(reason && (reason.stack || reason.filename), reason && (reason.message || reason))) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+            }
+          },
+          true
+        );
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            var err = event.error;
+            if (isMetaMaskNoise(event.filename || (err && err.stack), event.message || (err && err.message))) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+            }
+          },
+          true
+        );
+
+        var origError = console.error;
+        console.error = function () {
+          var parts = [];
+          for (var i = 0; i < arguments.length; i += 1) {
+            var arg = arguments[i];
+            parts.push(arg && (arg.stack || arg.message) ? arg.stack || arg.message : String(arg || ''));
+          }
+          var joined = parts.join(' ');
+          if (isMetaMaskNoise(joined, joined)) {
+            return;
+          }
+          return origError.apply(console, arguments);
+        };
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0D0F13" />

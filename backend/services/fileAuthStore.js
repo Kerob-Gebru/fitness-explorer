@@ -10,7 +10,7 @@ import {
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDirectory = path.dirname(currentFile);
-const dataDirectory = path.resolve(currentDirectory, "../../data");
+const dataDirectory = path.resolve(currentDirectory, "../data");
 const storePath = path.resolve(dataDirectory, "auth-db.json");
 
 let writeChain = Promise.resolve();

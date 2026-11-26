@@ -1,17 +1,17 @@
 import path from "node:path";
-import { sanitizeUser } from "../auth/authCore.js";
-import { createAuthHandlers } from "../auth/authHandlers.js";
-import { fileAuthStore } from "../auth/fileAuthStore.js";
-import {
-  hasValidImageSignature,
-  removeUploadedFile,
-  resolveSafeUploadPath,
-} from "../middleware/uploadMiddleware.js";
 import { AuthSession, User, UserProfile, sequelize } from "../models/index.js";
 import {
   USER_PROFILE_TABLE_METADATA,
   buildUserProfileRow,
 } from "../models/userProfileSchema.js";
+import { createAuthHandlers } from "../services/authService.js";
+import { fileAuthStore } from "../services/fileAuthStore.js";
+import { sanitizeUser } from "../utils/authHelpers.js";
+import {
+  cleanupPreviousLocalUpload,
+  hasValidImageSignature,
+  removeUploadedFile,
+} from "../utils/fileHelpers.js";
 
 const sequelizeAuthStore = {
   async findUserByEmail(email) {
@@ -195,10 +195,7 @@ export async function uploadAvatar(req, res) {
     const avatarUrl = `/uploads/${req.file.filename}`;
     const prevState = await fileAuthStore.getUserState(req.auth.userId);
     const previousAvatar = prevState?.profile?.avatarUrl || req.auth.user?.avatar_url;
-    if (previousAvatar && previousAvatar.startsWith("/uploads/")) {
-      const prevPath = resolveSafeUploadPath(path.basename(previousAvatar));
-      if (prevPath) await removeUploadedFile(prevPath);
-    }
+    await cleanupPreviousLocalUpload(previousAvatar, req.file.filename);
 
     await fileAuthStore.updateUserProfile(req.auth.userId, { avatarUrl });
     const baseState = prevState || { favorites: [], recentExercises: [], workout: {} };
@@ -247,10 +244,7 @@ export async function removeAvatar(req, res) {
   try {
     const prevState = await fileAuthStore.getUserState(req.auth.userId);
     const previousAvatar = prevState?.profile?.avatarUrl || req.auth.user?.avatar_url;
-    if (previousAvatar && previousAvatar.startsWith("/uploads/")) {
-      const prevPath = resolveSafeUploadPath(path.basename(previousAvatar));
-      if (prevPath) await removeUploadedFile(prevPath);
-    }
+    await cleanupPreviousLocalUpload(previousAvatar);
 
     await fileAuthStore.updateUserProfile(req.auth.userId, { avatarUrl: "" });
     if (prevState) {

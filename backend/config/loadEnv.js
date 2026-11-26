@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const currentFile = fileURLToPath(import.meta.url);
-const rootDirectory = path.resolve(path.dirname(currentFile), "../../..");
+const rootDirectory = path.resolve(path.dirname(currentFile), "../..");
 const envCandidates = [
   path.resolve(rootDirectory, ".env"),
   path.resolve(rootDirectory, "backend", ".env"),

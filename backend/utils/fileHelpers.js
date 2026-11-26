@@ -1,31 +1,14 @@
-// Configure Multer, the middleware that parses multipart form requests and
-// writes uploaded images to disk before an upload controller is called.
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
-import multer from "multer";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import crypto from "node:crypto";
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDirectory = path.dirname(currentFile);
 
-export const uploadDirectory = path.resolve(
-  currentDirectory,
-  "../../uploads"
-);
+export const uploadDirectory = path.resolve(currentDirectory, "../uploads");
 
-// Ensure the upload directory exists before Multer writes files to it.
 fs.mkdirSync(uploadDirectory, { recursive: true });
-
-// Require both a recognized extension and its matching MIME type.
-const allowedTypes = {
-  ".jpg": ["image/jpeg", "image/jpg", "image/pjpeg"],
-  ".jpeg": ["image/jpeg", "image/jpg", "image/pjpeg"],
-  ".png": ["image/png"],
-  ".gif": ["image/gif"],
-  ".webp": ["image/webp"],
-};
 
 export function resolveSafeUploadPath(filename) {
   if (typeof filename !== "string" || !filename.trim()) return null;
@@ -49,7 +32,16 @@ export async function removeUploadedFile(filePath) {
   }
 }
 
-// Verify file header magic bytes so renamed non-image files cannot bypass MIME checks.
+export async function cleanupPreviousLocalUpload(previousUrl, newFilename = "") {
+  if (typeof previousUrl !== "string" || !previousUrl.startsWith("/uploads/")) return;
+  const previousFilename = path.basename(previousUrl);
+  if (!previousFilename || previousFilename === newFilename) return;
+  const previousPath = resolveSafeUploadPath(previousFilename);
+  if (previousPath) {
+    await removeUploadedFile(previousPath);
+  }
+}
+
 export async function hasValidImageSignature(filePath, extension) {
   let handle;
   try {
@@ -87,41 +79,3 @@ export async function hasValidImageSignature(filePath, extension) {
     await handle?.close();
   }
 }
-
-const storage = multer.diskStorage({
-  destination: (req, file, callback) => {
-    fs.mkdirSync(uploadDirectory, { recursive: true });
-    callback(null, uploadDirectory);
-  },
-
-  filename: (req, file, callback) => {
-    const extension = path.extname(file.originalname || "").toLowerCase();
-    const uniqueName = `${crypto.randomUUID()}${extension}`;
-    callback(null, uniqueName);
-  },
-});
-
-function fileFilter(req, file, callback) {
-  const extension = path.extname(file.originalname || "").toLowerCase();
-  const acceptedMimeTypes = allowedTypes[extension];
-  const mimetype = String(file.mimetype || "").toLowerCase();
-
-  if (!acceptedMimeTypes || !acceptedMimeTypes.includes(mimetype)) {
-    return callback(
-      new Error("Only JPG, JPEG, PNG, GIF, and WEBP images are allowed.")
-    );
-  }
-
-  callback(null, true);
-}
-
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB maximum
-    files: 1,
-  },
-});
-
-export default upload;

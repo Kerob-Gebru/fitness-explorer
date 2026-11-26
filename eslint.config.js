@@ -29,7 +29,17 @@ export default defineConfig([
 
   // Backend configuration
   {
-    files: ['backend/src/**/*.js'],
+    files: [
+      'backend/server.js',
+      'backend/config/**/*.js',
+      'backend/controllers/**/*.js',
+      'backend/models/**/*.js',
+      'backend/routes/**/*.js',
+      'backend/middleware/**/*.js',
+      'backend/services/**/*.js',
+      'backend/utils/**/*.js',
+      'backend/scripts/**/*.js',
+    ],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',

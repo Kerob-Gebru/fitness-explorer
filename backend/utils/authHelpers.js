@@ -10,7 +10,7 @@ export const REFRESH_COOKIE_NAME = "fe_refresh_token";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const currentFile = fileURLToPath(import.meta.url);
-const secretFilePath = path.resolve(path.dirname(currentFile), "../../data/.auth-secret");
+const secretFilePath = path.resolve(path.dirname(currentFile), "../data/.auth-secret");
 
 function resolveSigningSecret() {
   const configured = process.env.AUTH_TOKEN_SECRET && process.env.AUTH_TOKEN_SECRET.trim();

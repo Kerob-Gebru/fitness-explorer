@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   REFRESH_COOKIE_NAME,
   hashPassword,
@@ -7,9 +10,9 @@ import {
   signAccessToken,
   verifyAccessToken,
   verifyPassword,
-} from "./authCore.js";
-import { createAuthHandlers } from "./authHandlers.js";
-import { createUserStateHandlers } from "./userStateHandlers.js";
+} from "../utils/authHelpers.js";
+import { createAuthHandlers } from "../services/authService.js";
+import { createUserStateHandlers } from "../services/userStateService.js";
 import {
   AUTH_SESSION_COLUMNS,
   AUTH_SESSION_INDEXES,
@@ -17,9 +20,6 @@ import {
   AUTH_SESSION_TABLE_NAME,
   buildAuthSessionRow,
 } from "../models/authSessionSchema.js";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   USER_PROFILE_COLUMNS,
   USER_PROFILE_INDEXES,
@@ -264,9 +264,9 @@ test("exposes complete user_profiles table schema, row mappers, and User Sequeli
     assert.ok(UserProfile.associations.user);
   } catch (error) {
     if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-    const modelsDir = path.dirname(fileURLToPath(import.meta.url));
-    const indexSrc = fs.readFileSync(path.resolve(modelsDir, "../models/index.js"), "utf8");
-    const modelSrc = fs.readFileSync(path.resolve(modelsDir, "../models/UserProfile.js"), "utf8");
+    const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
+    const indexSrc = fs.readFileSync(path.resolve(scriptsDir, "../models/index.js"), "utf8");
+    const modelSrc = fs.readFileSync(path.resolve(scriptsDir, "../models/UserProfile.js"), "utf8");
     assert.match(modelSrc, /USER_PROFILE_TABLE_NAME/);
     assert.match(indexSrc, /User\.hasOne\(UserProfile/);
     assert.match(indexSrc, /UserProfile\.belongsTo\(User/);
@@ -325,7 +325,6 @@ test("handles registration, login, session rotation, and token reuse family revo
     registerRes.body.data.session.tokenFamilyId
   );
 
-  // Presenting the already-rotated token must revoke the entire family.
   const reuseRes = await invokeHandler(handlers.refresh, {
     body: { refreshToken: firstRefreshToken },
   });
@@ -366,7 +365,7 @@ test("restores session from HttpOnly cookie and returns unauthenticated without 
   assert.notEqual(restoreRes.cookiesSet[REFRESH_COOKIE_NAME].value, cookieToken);
 });
 
-test("persists and reloads user saved favorites, plans, and goals via userStateHandlers", async () => {
+test("persists and reloads user saved favorites, plans, and goals via userStateService", async () => {
   const store = createMemoryAuthStore();
   const authHandlers = createAuthHandlers(store);
   const stateHandlers = createUserStateHandlers(store);

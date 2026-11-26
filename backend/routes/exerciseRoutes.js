@@ -1,14 +1,11 @@
-// This router groups HTTP endpoints for exercises.
 import express from "express";
-
 import {
-  getExercises,
-  getExercise,
   addExercise,
   editExercise,
+  getExercise,
+  getExercises,
   removeExercise,
 } from "../controllers/exerciseController.js";
-
 import {
   getUploadedImagesManifest,
   uploadExerciseImage,

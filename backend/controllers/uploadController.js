@@ -1,66 +1,19 @@
-// Handles exercise image uploads across backend database exercises and
-// external/mock exercises, storing files safely and cleaning up orphaned files.
-import fsPromises from "node:fs/promises";
 import path from "node:path";
 import Exercise from "../models/Exercise.js";
 import {
+  buildStorageKey,
+  normalizeExerciseId,
+  normalizeSource,
+  readImageManifest,
+  writeImageManifest,
+} from "../services/imageManifestService.js";
+import {
+  cleanupPreviousLocalUpload,
   hasValidImageSignature,
   removeUploadedFile,
-  resolveSafeUploadPath,
-  uploadDirectory,
-} from "../middleware/uploadMiddleware.js";
+} from "../utils/fileHelpers.js";
 
-const MANIFEST_PATH = path.resolve(uploadDirectory, "exercise-images.json");
-const VALID_SOURCES = new Set(["backend", "mock", "api"]);
-
-function normalizeExerciseId(rawId) {
-  if (typeof rawId !== "string") return "";
-  const trimmed = rawId.trim();
-  if (!trimmed || trimmed.length > 100) return "";
-  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return "";
-  return trimmed;
-}
-
-function normalizeSource(rawSource, exerciseId) {
-  const value = typeof rawSource === "string" ? rawSource.trim().toLowerCase() : "";
-  if (VALID_SOURCES.has(value)) return value;
-  if (exerciseId.startsWith("demo-")) return "mock";
-  if (/^\d+$/.test(exerciseId)) return "backend";
-  return "api";
-}
-
-function buildStorageKey(exerciseId, source) {
-  return `${source}:${exerciseId}`;
-}
-
-export async function readImageManifest() {
-  try {
-    const raw = await fsPromises.readFile(MANIFEST_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      console.error("Failed to read image manifest:", error.message);
-    }
-    return {};
-  }
-}
-
-async function writeImageManifest(manifest) {
-  const tempPath = `${MANIFEST_PATH}.${process.pid}.tmp`;
-  await fsPromises.writeFile(tempPath, JSON.stringify(manifest, null, 2), "utf8");
-  await fsPromises.rename(tempPath, MANIFEST_PATH);
-}
-
-async function cleanupPreviousLocalUpload(previousUrl, newFilename) {
-  if (typeof previousUrl !== "string" || !previousUrl.startsWith("/uploads/")) return;
-  const previousFilename = path.basename(previousUrl);
-  if (!previousFilename || previousFilename === newFilename) return;
-  const previousPath = resolveSafeUploadPath(previousFilename);
-  if (previousPath) {
-    await removeUploadedFile(previousPath);
-  }
-}
+export { readImageManifest };
 
 export async function getUploadedImagesManifest(req, res) {
   try {
@@ -121,7 +74,6 @@ export async function uploadExerciseImage(req, res) {
     const storageKey = buildStorageKey(exerciseId, source);
     const imageUrl = `/uploads/${req.file.filename}`;
 
-    // When a database backend exercise is targeted, persist to Sequelize first.
     let persistedToDatabase = false;
     if (source === "backend" && /^\d+$/.test(exerciseId)) {
       const numericId = Number(exerciseId);
@@ -147,9 +99,6 @@ export async function uploadExerciseImage(req, res) {
     }
 
     if (!persistedToDatabase) {
-      // If a MySQL connection happens to be configured for external exercises,
-      // sync via unique external_id without creating duplicates; otherwise use
-      // the persistent disk manifest in backend/uploads.
       let dbSynced = false;
       try {
         const externalKey = storageKey.slice(0, 100);

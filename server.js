@@ -1,78 +1,56 @@
-import "./backend/src/config/loadEnv.js";
-import fsPromises from "node:fs/promises";
+import "./backend/config/loadEnv.js";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import express from "express";
 import cors from "cors";
+import express from "express";
 import helmet from "helmet";
-import multer from "multer";
-import { createAuthHandlers } from "./backend/src/auth/authHandlers.js";
-import { fileAuthStore } from "./backend/src/auth/fileAuthStore.js";
-import { createUserStateHandlers } from "./backend/src/auth/userStateHandlers.js";
-import { mockExercises } from "./src/services/mockExercises.js";
-import upload, {
+import { appConfig } from "./backend/config/app.js";
+import { createErrorHandler, notFoundApiHandler } from "./backend/middleware/errorMiddleware.js";
+import upload from "./backend/middleware/uploadMiddleware.js";
+import { createAuthHandlers } from "./backend/services/authService.js";
+import { fileAuthStore } from "./backend/services/fileAuthStore.js";
+import {
+  buildStorageKey,
+  normalizeExerciseId,
+  normalizeSource,
+  readImageManifest,
+  writeImageManifest,
+} from "./backend/services/imageManifestService.js";
+import { createUserStateHandlers } from "./backend/services/userStateService.js";
+import {
+  cleanupPreviousLocalUpload,
   hasValidImageSignature,
   removeUploadedFile,
-  resolveSafeUploadPath,
   uploadDirectory,
-} from "./backend/src/middleware/uploadMiddleware.js";
+} from "./backend/utils/fileHelpers.js";
+import { logger } from "./backend/utils/logger.js";
+import { mockExercises } from "./src/services/mockExercises.js";
 
 const currentFile = fileURLToPath(import.meta.url);
 const rootDirectory = path.dirname(currentFile);
 const distDirectory = path.resolve(rootDirectory, "dist");
-const manifestPath = path.resolve(uploadDirectory, "exercise-images.json");
-const VALID_SOURCES = new Set(["backend", "mock", "api"]);
 const authHandlers = createAuthHandlers(fileAuthStore);
 const userStateHandlers = createUserStateHandlers(fileAuthStore);
 
-function normalizeExerciseId(rawId) {
-  if (typeof rawId !== "string") return "";
-  const trimmed = rawId.trim();
-  if (!trimmed || trimmed.length > 100) return "";
-  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return "";
-  return trimmed;
-}
-
-function normalizeSource(rawSource, exerciseId) {
-  const value = typeof rawSource === "string" ? rawSource.trim().toLowerCase() : "";
-  if (VALID_SOURCES.has(value)) return value;
-  if (exerciseId.startsWith("demo-")) return "mock";
-  if (/^\d+$/.test(exerciseId)) return "backend";
-  return "api";
-}
-
-function buildStorageKey(exerciseId, source) {
-  return `${source}:${exerciseId}`;
-}
-
-async function readManifest() {
-  try {
-    const raw = await fsPromises.readFile(manifestPath, "utf8");
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      console.error("Failed to read image manifest:", error.message);
-    }
-    return {};
-  }
-}
-
-async function writeManifest(manifest) {
-  const tempPath = `${manifestPath}.${process.pid}.tmp`;
-  await fsPromises.writeFile(tempPath, JSON.stringify(manifest, null, 2), "utf8");
-  await fsPromises.rename(tempPath, manifestPath);
-}
-
-async function cleanupPreviousLocalUpload(previousUrl, newFilename) {
-  if (typeof previousUrl !== "string" || !previousUrl.startsWith("/uploads/")) return;
-  const previousFilename = path.basename(previousUrl);
-  if (!previousFilename || previousFilename === newFilename) return;
-  const previousPath = resolveSafeUploadPath(previousFilename);
-  if (previousPath) {
-    await removeUploadedFile(previousPath);
-  }
+function formatBackendExercise(exercise, manifest) {
+  const source = exercise.source || "mock";
+  const uploadEntry = manifest[`${source}:${exercise.id}`];
+  return {
+    id: exercise.id,
+    name: exercise.name,
+    body_part: exercise.bodyPart,
+    target_muscle: exercise.target,
+    equipment: exercise.equipment,
+    secondaryMuscles: exercise.secondaryMuscles || [],
+    instructions: Array.isArray(exercise.instructions)
+      ? exercise.instructions
+      : exercise.instructions
+        ? [exercise.instructions]
+        : [],
+    gif_url: uploadEntry?.imageUrl || exercise.gifUrl || null,
+    source,
+  };
 }
 
 async function createApp() {
@@ -85,63 +63,8 @@ async function createApp() {
       contentSecurityPolicy: false,
     })
   );
-
-  const configuredOrigins = (process.env.CLIENT_ORIGIN || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  const allowedOrigins = new Set([
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://[::1]:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://[::1]:5173",
-    "http://localhost:4173",
-    ...configuredOrigins,
-  ]);
-
-  function isAllowedOrigin(origin) {
-    if (!origin || allowedOrigins.has(origin)) return true;
-    try {
-      const url = new URL(origin);
-      const isHttp = url.protocol === "http:" || url.protocol === "https:";
-      if (!isHttp) return false;
-      if (
-        url.hostname === "localhost" ||
-        url.hostname === "127.0.0.1" ||
-        url.hostname === "[::1]" ||
-        url.hostname === "::1"
-      ) {
-        return true;
-      }
-      if (
-        url.hostname.endsWith(".run.app") ||
-        url.hostname.endsWith(".googleusercontent.com")
-      ) {
-        return true;
-      }
-    } catch {
-      return false;
-    }
-    return false;
-  }
-
-  app.use(
-    cors({
-      origin(origin, callback) {
-        if (isAllowedOrigin(origin)) {
-          return callback(null, true);
-        }
-        return callback(new Error("Origin not allowed by CORS."));
-      },
-      credentials: true,
-      allowedHeaders: ["Content-Type", "Authorization"],
-    })
-  );
-
-  app.use(express.json({ limit: "1mb" }));
+  app.use(cors(appConfig.corsOptions));
+  app.use(express.json({ limit: appConfig.jsonBodyLimit }));
   app.use("/uploads", express.static(uploadDirectory));
 
   app.post("/api/auth/register", authHandlers.register);
@@ -208,7 +131,7 @@ async function createApp() {
       });
     } catch (error) {
       await removeUploadedFile(uploadedFilePath);
-      console.error("Avatar upload failed:", error.message);
+      logger.error("Avatar upload failed:", error.message);
       return res.status(500).json({
         success: false,
         message: "Failed to upload profile photo.",
@@ -226,7 +149,7 @@ async function createApp() {
           profile: { ...(prevState.profile || {}), avatarUrl: "" },
         });
       }
-      await cleanupPreviousLocalUpload(previousAvatarUrl, "");
+      await cleanupPreviousLocalUpload(previousAvatarUrl);
 
       return res.status(200).json({
         success: true,
@@ -246,7 +169,7 @@ async function createApp() {
         },
       });
     } catch (error) {
-      console.error("Remove avatar failed:", error.message);
+      logger.error("Remove avatar failed:", error.message);
       return res.status(500).json({
         success: false,
         message: "Failed to remove profile photo.",
@@ -270,13 +193,13 @@ async function createApp() {
 
   app.get("/api/exercises/uploads/manifest", async (req, res) => {
     try {
-      const manifest = await readManifest();
+      const manifest = await readImageManifest();
       return res.status(200).json({
         success: true,
         data: manifest,
       });
     } catch (error) {
-      console.error("Read image manifest error:", error.message);
+      logger.error("Read image manifest error:", error.message);
       return res.status(500).json({
         success: false,
         message: "Failed to load uploaded exercise images.",
@@ -284,29 +207,9 @@ async function createApp() {
     }
   });
 
-  function formatBackendExercise(exercise, manifest) {
-    const source = exercise.source || "mock";
-    const uploadEntry = manifest[`${source}:${exercise.id}`];
-    return {
-      id: exercise.id,
-      name: exercise.name,
-      body_part: exercise.bodyPart,
-      target_muscle: exercise.target,
-      equipment: exercise.equipment,
-      secondaryMuscles: exercise.secondaryMuscles || [],
-      instructions: Array.isArray(exercise.instructions)
-        ? exercise.instructions
-        : exercise.instructions
-          ? [exercise.instructions]
-          : [],
-      gif_url: uploadEntry?.imageUrl || exercise.gifUrl || null,
-      source,
-    };
-  }
-
   app.get("/api/exercises", async (req, res) => {
     try {
-      const manifest = await readManifest();
+      const manifest = await readImageManifest();
       const search = typeof req.query.search === "string" ? req.query.search.trim().toLowerCase() : "";
       const bodyPart = typeof req.query.body_part === "string" ? req.query.body_part.trim().toLowerCase() : "";
       const targetMuscle =
@@ -356,7 +259,7 @@ async function createApp() {
         data: rows,
       });
     } catch (error) {
-      console.error("List exercises error:", error.message);
+      logger.error("List exercises error:", error.message);
       return res.status(500).json({
         success: false,
         message: "Failed to retrieve exercises.",
@@ -380,13 +283,13 @@ async function createApp() {
           message: "Exercise not found.",
         });
       }
-      const manifest = await readManifest();
+      const manifest = await readImageManifest();
       return res.status(200).json({
         success: true,
         data: formatBackendExercise(found, manifest),
       });
     } catch (error) {
-      console.error("Get exercise error:", error.message);
+      logger.error("Get exercise error:", error.message);
       return res.status(500).json({
         success: false,
         message: "Failed to retrieve exercise.",
@@ -436,7 +339,7 @@ async function createApp() {
       const storageKey = buildStorageKey(exerciseId, source);
       const imageUrl = `/uploads/${req.file.filename}`;
 
-      const manifest = await readManifest();
+      const manifest = await readImageManifest();
       const previousUrl = manifest[storageKey]?.imageUrl;
       manifest[storageKey] = {
         exerciseId,
@@ -445,7 +348,7 @@ async function createApp() {
         filename: req.file.filename,
         updatedAt: new Date().toISOString(),
       };
-      await writeManifest(manifest);
+      await writeImageManifest(manifest);
       await cleanupPreviousLocalUpload(previousUrl, req.file.filename);
 
       return res.status(200).json({
@@ -461,7 +364,7 @@ async function createApp() {
       });
     } catch (error) {
       await removeUploadedFile(uploadedFilePath);
-      console.error("Image upload failed:", error.message);
+      logger.error("Image upload failed:", error.message);
       return res.status(500).json({
         success: false,
         message: "Image upload failed.",
@@ -469,57 +372,8 @@ async function createApp() {
     }
   });
 
-  app.use("/api", (req, res) => {
-    return res.status(404).json({
-      success: false,
-      message: `API route not found: ${req.method} ${req.originalUrl}`,
-    });
-  });
-
-  app.use((error, req, res, next) => {
-    if (error instanceof multer.MulterError) {
-      if (error.code === "LIMIT_FILE_SIZE") {
-        return res.status(413).json({
-          success: false,
-          message: "Image is too large. Maximum allowed size is 5 MB.",
-        });
-      }
-      if (error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE") {
-        return res.status(400).json({
-          success: false,
-          message: "Upload one image file at a time using the 'image' field.",
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    if (error.message === "Only JPG, JPEG, PNG, GIF, and WEBP images are allowed.") {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    if (error.message === "Origin not allowed by CORS.") {
-      return res.status(403).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    if (req.path.startsWith("/api/")) {
-      console.error("API error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "An unexpected server error occurred.",
-      });
-    }
-
-    return next(error);
-  });
+  app.use("/api", notFoundApiHandler);
+  app.use(createErrorHandler({ apiOnly: false }));
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
@@ -535,7 +389,7 @@ async function createApp() {
     });
   }
 
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = appConfig.fullstackPort;
   const server = http.createServer(app);
   const explicitHost = process.env.HOST?.trim();
 
@@ -544,7 +398,7 @@ async function createApp() {
 
     const handleListening = () => {
       server.removeListener("error", handleError);
-      console.log(`Fitness Explorer running on http://localhost:${PORT}`);
+      logger.info(`Fitness Explorer running on http://localhost:${PORT}`);
       resolve();
     };
 
@@ -571,6 +425,6 @@ async function createApp() {
 }
 
 createApp().catch((error) => {
-  console.error("Server startup failed:", error);
+  logger.error("Server startup failed:", error?.stack || error?.message);
   process.exit(1);
 });

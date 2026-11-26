@@ -14,7 +14,7 @@ if (
 }
 
 module.exports = {
-  config: path.resolve(__dirname, "sequelize-cli.config.cjs"),
+  config: path.resolve(__dirname, "config/sequelizeCli.cjs"),
   "migrations-path": path.resolve(__dirname, "migrations"),
   "seeders-path": path.resolve(__dirname, "seeders"),
 };

@@ -1,4 +1,4 @@
-import { sanitizeUser } from "./authCore.js";
+import { sanitizeUser } from "../utils/authHelpers.js";
 import {
   USER_PROFILE_TABLE_METADATA,
   sanitizeProfilePayload,

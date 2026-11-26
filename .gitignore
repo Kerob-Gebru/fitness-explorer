@@ -12,6 +12,7 @@ dist-ssr
 # Logs
 logs
 *.log
+backend/logs/*.log
 npm-debug.log*
 
 # Editor and OS files

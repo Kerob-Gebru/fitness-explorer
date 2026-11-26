@@ -24,10 +24,7 @@ module.exports = function getSequelizeCliConfig() {
       port: Number(process.env.DB_PORT) || 3306,
       dialect: "mysql",
       logging: false,
-      migrationStorage: path.resolve(
-        __dirname,
-        "sequelize-cli-migration-storage.cjs"
-      ),
+      migrationStorage: path.resolve(__dirname, "migrationStorage.cjs"),
       migrationStorageTableName: "SequelizeMeta",
       seederStorage: "sequelize",
       seederStorageTableName: "SequelizeData",

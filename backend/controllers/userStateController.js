@@ -1,10 +1,10 @@
-import { createUserStateHandlers } from "../auth/userStateHandlers.js";
-import { fileAuthStore } from "../auth/fileAuthStore.js";
 import { User, UserProfile } from "../models/index.js";
 import {
   buildUserProfileRow,
   mapProfileRowToClient,
 } from "../models/userProfileSchema.js";
+import { fileAuthStore } from "../services/fileAuthStore.js";
+import { createUserStateHandlers } from "../services/userStateService.js";
 
 const userStateStore = {
   async getUserState(userId) {
