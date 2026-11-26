@@ -34,16 +34,35 @@ const configuredOrigins = (process.env.CLIENT_ORIGIN || "")
 const defaultAllowedOrigins = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "http://[::1]:3000",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://[::1]:5173",
   "http://localhost:4173",
   ...configuredOrigins,
 ]);
 
+function isAllowedOrigin(origin) {
+  if (!origin || defaultAllowedOrigins.has(origin)) return true;
+  try {
+    const url = new URL(origin);
+    const isHttp = url.protocol === "http:" || url.protocol === "https:";
+    if (!isHttp) return false;
+    return (
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "[::1]" ||
+      url.hostname === "::1"
+    );
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || defaultAllowedOrigins.has(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
       return callback(new Error("Origin not allowed by CORS."));

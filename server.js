@@ -1,3 +1,4 @@
+import "./backend/src/config/loadEnv.js";
 import fsPromises from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
@@ -98,14 +99,36 @@ async function createApp() {
     ...configuredOrigins,
   ]);
 
+  function isAllowedOrigin(origin) {
+    if (!origin || allowedOrigins.has(origin)) return true;
+    try {
+      const url = new URL(origin);
+      const isHttp = url.protocol === "http:" || url.protocol === "https:";
+      if (!isHttp) return false;
+      if (
+        url.hostname === "localhost" ||
+        url.hostname === "127.0.0.1" ||
+        url.hostname === "[::1]" ||
+        url.hostname === "::1"
+      ) {
+        return true;
+      }
+      if (
+        url.hostname.endsWith(".run.app") ||
+        url.hostname.endsWith(".googleusercontent.com")
+      ) {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }
+
   app.use(
     cors({
       origin(origin, callback) {
-        if (!origin || allowedOrigins.has(origin)) {
-          return callback(null, true);
-        }
-        const host = origin.replace(/^https?:\/\//, "").split("/")[0];
-        if (host.endsWith(".run.app") || host.endsWith(".googleusercontent.com")) {
+        if (isAllowedOrigin(origin)) {
           return callback(null, true);
         }
         return callback(new Error("Origin not allowed by CORS."));

@@ -7234,3 +7234,27 @@ html[data-theme] .login-schema-constraint {
   }
 }
 
+.app-error-boundary {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--color-bg, #0d0f13);
+  color: var(--color-text, #f2f0ec);
+}
+
+.app-error-boundary__card {
+  max-width: 30rem;
+  text-align: center;
+}
+
+.app-error-boundary__title {
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+}
+
+.app-error-boundary__message {
+  margin-bottom: 1.25rem;
+  color: var(--color-text-secondary, #a5abb6);
+  line-height: 1.5;
+}
